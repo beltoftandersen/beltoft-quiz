@@ -54,13 +54,9 @@
 	}
 
 	Quiz.prototype.reset = function () {
-		var rnd = mulberry32(this.data.token.seed);
-		var questions = this.cfg.questions.slice();
-		if (this.cfg.settings.shuffle_questions) { questions = shuffle(questions, rnd); }
-		if (this.cfg.settings.shuffle_answers) {
-			questions = questions.map(function (q) { return Object.assign({}, q, { answers: shuffle(q.answers, rnd) }); });
-		}
-		this.questions = questions;
+		this.token = null;
+		this.startedAt = 0;
+		this.questions = this.cfg.questions.slice();
 		this.answers = {};
 		this.index = 0;
 		this.remaining = parseInt(this.cfg.settings.timer, 10) || 0;
@@ -86,17 +82,46 @@
 		]));
 	};
 
+	// The token is fetched when the visitor presses Start, so page caches never share one and the timer starts now.
 	Quiz.prototype.start = function () {
-		this.data.token.started_at = Math.floor(Date.now() / 1000) < this.data.token.started_at ? this.data.token.started_at : this.data.token.started_at;
-		if (this.cfg.settings.timer > 0) { this.startTimer(); }
-		this.renderQuestion();
+		var self = this;
+		var btn = this.root.querySelector('.bgq-start .bgq-btn--primary');
+		if (btn) { btn.disabled = true; }
+		fetch(this.data.token_url, { credentials: 'same-origin', headers: this.headers(), cache: 'no-store' })
+			.then(function (r) { return r.ok ? r.json() : Promise.reject(); })
+			.then(function (token) {
+				self.token = token;
+				self.data.seed = token.seed;
+				self.reshuffle();
+				self.startedAt = Date.now();
+				if (self.cfg.settings.timer > 0) { self.startTimer(); }
+				self.renderQuestion();
+			})
+			.catch(function () { self.renderError(self.i18n.error, true); });
 	};
 
+	Quiz.prototype.reshuffle = function () {
+		var rnd = mulberry32(this.data.seed);
+		var questions = this.cfg.questions.slice();
+		if (this.cfg.settings.shuffle_questions) { questions = shuffle(questions, rnd); }
+		if (this.cfg.settings.shuffle_answers) {
+			questions = questions.map(function (q) { return Object.assign({}, q, { answers: shuffle(q.answers, rnd) }); });
+		}
+		this.questions = questions;
+	};
+
+	Quiz.prototype.headers = function () {
+		var h = { 'Content-Type': 'application/json' };
+		if (this.data.nonce) { h['X-WP-Nonce'] = this.data.nonce; }
+		return h;
+	};
+
+	// Countdown derived from the clock, not from tick counts, so background-tab throttling cannot drift it.
 	Quiz.prototype.startTimer = function () {
-		var self = this;
-		this.remaining = parseInt(this.cfg.settings.timer, 10);
+		var self = this, total = parseInt(this.cfg.settings.timer, 10);
+		this.remaining = total;
 		this.timerId = setInterval(function () {
-			self.remaining -= 1;
+			self.remaining = total - Math.floor((Date.now() - self.startedAt) / 1000);
 			var out = self.root.querySelector('.bgq-timer-value');
 			if (out) { out.textContent = formatTime(Math.max(0, self.remaining)); }
 			if (self.remaining <= 0) { self.stopTimer(); self.timesUp(); }
@@ -210,21 +235,26 @@
 		var self = this;
 		this.stopTimer();
 		this.mount(el('div', { class: 'bgq-screen bgq-loading', 'aria-live': 'polite' }, [el('p', { class: 'bgq-meta', text: this.i18n.sending })]));
-		var body = Object.assign({ quiz_id: this.data.id, token: this.data.token, answers: this.answers }, extra || {});
-		fetch(this.data.rest_url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin', body: JSON.stringify(body) })
-			.then(function (r) { return r.json().then(function (json) { return { ok: r.ok, json: json }; }); })
+		var body = Object.assign({ quiz_id: this.data.id, token: this.token, answers: this.answers }, extra || {});
+		fetch(this.data.rest_url, { method: 'POST', headers: this.headers(), credentials: 'same-origin', body: JSON.stringify(body) })
+			.then(function (r) { return r.json().then(function (json) { return { ok: r.ok, status: r.status, json: json }; }); })
 			.then(function (res) {
-				if (!res.ok) { self.renderError(res.json && res.json.message ? res.json.message : self.i18n.error); return; }
+				if (!res.ok) { self.renderError(res.json && res.json.message ? res.json.message : self.i18n.error, res.status === 403 || res.status === 410); return; }
 				self.renderResult(res.json);
 			})
 			.catch(function () { self.renderError(self.i18n.error); });
 	};
 
-	Quiz.prototype.renderError = function (message) {
+	// A stale session (403/410) needs a fresh page; other errors restart in place.
+	Quiz.prototype.renderError = function (message, reloadOnRetry) {
 		var self = this;
+		this.stopTimer();
 		this.mount(el('div', { class: 'bgq-screen bgq-failed' }, [
 			el('p', { class: 'bgq-error', role: 'alert', text: message }),
-			el('button', { type: 'button', class: 'bgq-btn bgq-btn--primary', text: this.labels.retry, onclick: function () { self.reset(); self.renderStart(); } })
+			el('button', { type: 'button', class: 'bgq-btn bgq-btn--primary', text: this.labels.retry, onclick: function () {
+				if (reloadOnRetry) { window.location.reload(); return; }
+				self.reset(); self.renderStart();
+			} })
 		]));
 	};
 

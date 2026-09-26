@@ -68,7 +68,8 @@ class Builder {
 
 		$config           = Config::load( $post->ID );
 		$config['title']  = $post->post_title;
-		$config['status'] = 'publish' === $post->post_status ? 'publish' : 'draft';
+		$config['status']      = 'publish' === $post->post_status ? 'publish' : 'draft';
+		$config['can_publish'] = current_user_can( 'publish_post', $post->ID );
 
 		wp_localize_script(
 			'bgq-builder',

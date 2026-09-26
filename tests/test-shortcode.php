@@ -33,7 +33,7 @@ global $wp_scripts;
 $inline = implode( "\n", (array) $wp_scripts->get_data( 'bgq-quiz', 'before' ) );
 bgq_assert( false !== strpos( $inline, 'bgq_data_' . $id ), 'inline data object present' );
 bgq_assert( false === strpos( $inline, '"correct"' ) && false === strpos( $inline, '"points"' ) && false === strpos( $inline, '"min"' ), 'inline data has no grading info' );
-bgq_assert( false !== strpos( $inline, '"hash"' ) && false !== strpos( $inline, '"rest_url"' ), 'inline data has token and rest url' );
+bgq_assert( false !== strpos( $inline, '"token_url"' ) && false !== strpos( $inline, '"rest_url"' ), 'inline data has token url and rest url' );
 
 $cfg = Config::load( $id );
 $r   = Results::render( $cfg, 'hi' );

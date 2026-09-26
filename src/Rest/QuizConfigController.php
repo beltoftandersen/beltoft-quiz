@@ -69,7 +69,10 @@ class QuizConfigController {
 			$post_update['post_title'] = sanitize_text_field( (string) $raw['title'] );
 		}
 		if ( isset( $raw['status'] ) && in_array( $raw['status'], [ 'publish', 'draft' ], true ) ) {
-			$post_update['post_status'] = $raw['status'];
+			// Publishing follows the post type's capability, like the classic editor.
+			if ( 'draft' === $raw['status'] || current_user_can( 'publish_post', $id ) ) {
+				$post_update['post_status'] = $raw['status'];
+			}
 		}
 		if ( count( $post_update ) > 1 ) {
 			wp_update_post( $post_update );
@@ -86,6 +89,7 @@ class QuizConfigController {
 		$payload           = Config::load( $id );
 		$payload['title']  = $post ? $post->post_title : '';
 		$payload['status'] = $post ? $post->post_status : 'draft';
+		$payload['can_publish'] = current_user_can( 'publish_post', $id );
 		return $payload;
 	}
 }

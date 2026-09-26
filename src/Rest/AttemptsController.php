@@ -37,6 +37,34 @@ class AttemptsController {
 				],
 			]
 		);
+
+		register_rest_route(
+			self::NS,
+			'/quizzes/(?P<id>\d+)/token',
+			[
+				'methods'             => 'GET',
+				'permission_callback' => '__return_true',
+				'callback'            => [ __CLASS__, 'token' ],
+			]
+		);
+	}
+
+	/**
+	 * Issue a start token at the moment the visitor presses Start (never cached with the page).
+	 *
+	 * @param \WP_REST_Request $request Request.
+	 * @return \WP_REST_Response|\WP_Error
+	 */
+	public static function token( \WP_REST_Request $request ) {
+		$quiz_id = (int) $request['id'];
+		$post    = get_post( $quiz_id );
+		if ( ! $post || PostType::TYPE !== $post->post_type || 'publish' !== $post->post_status ) {
+			return new \WP_Error( 'bgq_not_found', __( 'This quiz is not available.', 'beltoft-quiz' ), [ 'status' => 404 ] );
+		}
+		$response = rest_ensure_response( Token::issue( $quiz_id ) );
+		$response->header( 'Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0' );
+		$response->header( 'Pragma', 'no-cache' );
+		return $response;
 	}
 
 	/**
@@ -69,8 +97,8 @@ class AttemptsController {
 		}
 		set_transient( $rl_key, $count + 1, self::RATE_WINDOW );
 
-		// Duplicate submit of the same session (double click): return the stored attempt.
-		$dup_key = 'bgq_dup_' . md5( $quiz_id . '|' . (string) $token['hash'] );
+		// Duplicate submit of the same session by the same visitor (double click): return the stored attempt.
+		$dup_key = 'bgq_dup_' . md5( $quiz_id . '|' . (string) $token['hash'] . '|' . $ip_hash . '|' . wp_json_encode( $request['answers'] ) );
 		$dup_id  = (int) get_transient( $dup_key );
 		if ( $dup_id && ( $dup = Attempts::get( $dup_id ) ) ) {
 			return rest_ensure_response( self::response( $config, $dup, true ) );

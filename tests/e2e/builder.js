@@ -20,7 +20,7 @@ const HOST = new URL(ADMIN).hostname;
   log(await page.locator('#wpfooter').count() === 1, 'single admin footer');
   await page.fill('.bgq-title-input', 'E2E built quiz');
   // Two questions with answers.
-  for (let i = 0; i < 2; i++) { await page.locator('.bgq-section[data-section=questions]').locator('button', { hasText: 'Add question' }).click(); }
+  for (let i = 0; i < 2; i++) { await page.locator('[data-action=add-question]').click(); }
   const items = page.locator('.bgq-section[data-section=questions]').locator('.bgq-item');
   log(await items.count() === 2, 'two questions added');
   for (let i = 0; i < 2; i++) {
@@ -31,7 +31,7 @@ const HOST = new URL(ADMIN).hostname;
   }
   // Two results with ranges.
   const resSection = page.locator('.bgq-section[data-section=results]');
-  for (let i = 0; i < 2; i++) { await resSection.locator('button', { hasText: 'Add result' }).click(); }
+  for (let i = 0; i < 2; i++) { await page.locator('[data-action=add-result]').click(); }
   const results = resSection.locator('.bgq-item');
   await results.nth(0).locator('input.large-text').first().fill('Top');
   await results.nth(0).locator('.bgq-range input').nth(0).fill('50'); await results.nth(0).locator('.bgq-range input').nth(1).fill('100');
@@ -39,9 +39,9 @@ const HOST = new URL(ADMIN).hostname;
   await results.nth(1).locator('.bgq-range input').nth(0).fill('0'); await results.nth(1).locator('.bgq-range input').nth(1).fill('49');
   await page.selectOption('.bgq-header select', 'publish');
   await page.click('.bgq-save');
-  await page.waitForFunction(() => /Saved|Could not|error/i.test(document.getElementById('bgq-save-status').textContent), null, { timeout: 15000 });
+  await page.waitForSelector('#bgq-save-status.is-ok, #bgq-save-status.is-error', { timeout: 15000 });
   const status = await page.locator('#bgq-save-status').textContent();
-  log(/Saved/.test(status), 'save reports success (' + status.trim() + ')');
+  log(await page.locator('#bgq-save-status.is-ok').count() === 1, 'save reports success (' + status.trim() + ')');
   const savedId = await page.evaluate(() => window.bgq_builder.quiz_id);
   await page.goto(ADMIN + 'post.php?post=' + savedId + '&action=edit', { waitUntil: 'networkidle' });
   await page.waitForSelector('#bgq-builder .bgq-header', { timeout: 30000 });
@@ -52,7 +52,7 @@ const HOST = new URL(ADMIN).hostname;
   // Validation: clear a question text and save → error shown, not persisted.
   await page.locator('.bgq-section[data-section=questions]').locator('.bgq-item').first().locator('.bgq-field input.large-text').first().fill('');
   await page.click('.bgq-save');
-  await page.waitForFunction(() => /Saved|Could not|errors|error/i.test(document.getElementById('bgq-save-status').textContent), null, { timeout: 15000 });
+  await page.waitForSelector('#bgq-save-status.is-ok, #bgq-save-status.is-error', { timeout: 15000 });
   log(await page.locator('.bgq-errors').count() === 1, 'validation errors listed');
   log(await page.locator('.bgq-item.has-error').count() >= 1, 'field-level error highlighted');
   const quizId = await page.evaluate(() => window.bgq_builder.quiz_id);

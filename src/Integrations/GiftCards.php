@@ -65,6 +65,13 @@ class GiftCards {
 			return null;
 		}
 
+		// One reward per email per quiz: a repeat run by the same person returns the card already issued.
+		$previous = self::previous_card( (int) $attempt->quiz_id, $email, (int) $attempt_id );
+		if ( $previous ) {
+			Attempts::update( (int) $attempt_id, [ 'gift_card_id' => (int) $previous->id ] );
+			return [ 'code' => $previous->code, 'amount' => (float) $previous->initial_amount ];
+		}
+
 		$expiry = (int) ( $rw['expiry_days'] ?? 0 );
 		$args   = [
 			'amount'          => (float) $rw['amount'],
@@ -92,6 +99,22 @@ class GiftCards {
 		$card = \Bgcw\GiftCard\Repository::find( (int) $card_id );
 
 		return $card ? [ 'code' => $card->code, 'amount' => (float) $card->initial_amount ] : null;
+	}
+
+	/**
+	 * Card already issued to this email for this quiz, if any.
+	 *
+	 * @return object|null
+	 */
+	private static function previous_card( int $quiz_id, string $email, int $except_attempt ) {
+		global $wpdb;
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table.
+		$card_id = (int) $wpdb->get_var( $wpdb->prepare( "SELECT gift_card_id FROM {$wpdb->prefix}bgq_attempts WHERE quiz_id = %d AND email = %s AND id <> %d AND gift_card_id IS NOT NULL ORDER BY id ASC LIMIT 1", $quiz_id, $email, $except_attempt ) );
+		if ( ! $card_id ) {
+			return null;
+		}
+		$card = \Bgcw\GiftCard\Repository::find( $card_id );
+		return $card ? $card : null;
 	}
 
 	/**

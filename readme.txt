@@ -4,7 +4,7 @@ Tags: quiz, survey, lead generation, product finder, woocommerce
 Requires at least: 5.8
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.0.0
+Stable tag: 1.0.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -53,6 +53,14 @@ With Beltoft Gift Cards active, enable the reward on a quiz and choose the amoun
 Yes. Entries are included in WordPress's personal data export and erasure by email, and a suggested privacy policy text is provided.
 
 == Changelog ==
+
+= 1.0.1 =
+* Fixed: The quiz start token is now issued when the visitor presses Start through an uncacheable request, so page caches can no longer share one session between visitors or expire the quiz; the duplicate-submit guard is per visitor.
+* Fixed: The timer counts from the moment Start is pressed, matching the server.
+* Fixed: Logged-in visitors are recognised on submit (one attempt per user, reward to their account email).
+* Fixed: Contributors can save a quiz but no longer publish it through the builder.
+* Fixed: One gift card per email per quiz, so reloading and resubmitting cannot mint more cards.
+* Fixed: After an expired or invalid session, Try again reloads the page instead of failing repeatedly.
 
 = 1.0.0 =
 * Initial release.

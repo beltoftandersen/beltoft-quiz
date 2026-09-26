@@ -4,7 +4,6 @@ namespace Bgq\Frontend;
 
 use Bgq\Quiz\Config;
 use Bgq\Quiz\PostType;
-use Bgq\Quiz\Token;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -66,8 +65,8 @@ class Shortcode {
 			'id'       => $quiz_id,
 			'title'    => get_the_title( $post ),
 			'config'   => Config::public_view( $config ),
-			'token'    => Token::issue( $quiz_id ),
-			'rest_url' => esc_url_raw( rest_url( 'bgq/v1/attempts' ) ),
+			'token_url' => esc_url_raw( rest_url( 'bgq/v1/quizzes/' . $quiz_id . '/token' ) ),
+			'rest_url'  => esc_url_raw( rest_url( 'bgq/v1/attempts' ) ),
 			'i18n'     => [
 				/* translators: 1: current question number, 2: total questions */
 				'question_of'   => __( 'Question %1$s of %2$s', 'beltoft-quiz' ),
@@ -96,6 +95,10 @@ class Shortcode {
 				'times_up'      => __( 'Time is up, sending your answers…', 'beltoft-quiz' ),
 			],
 		];
+		if ( is_user_logged_in() ) {
+			// Lets the REST request run as the logged-in user (one-attempt by user, reward to their email).
+			$data['nonce'] = wp_create_nonce( 'wp_rest' );
+		}
 		wp_add_inline_script( 'bgq-quiz', 'window.bgq_data_' . $quiz_id . ' = ' . wp_json_encode( $data ) . ';', 'before' );
 
 		$accent = sanitize_hex_color( $config['settings']['accent'] ) ?: '#1f4a36';

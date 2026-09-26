@@ -94,7 +94,9 @@
 		var title = input('text', state.title, function (v) { state.title = v; });
 		title.className = 'bgq-title-input';
 		title.placeholder = t.title;
-		var status = select({ draft: t.draft, publish: t.published }, state.status === 'publish' ? 'publish' : 'draft', function (v) { state.status = v; });
+		var statusOptions = { draft: t.draft };
+		if (state.can_publish || state.status === 'publish') { statusOptions.publish = t.published; }
+		var status = select(statusOptions, state.status === 'publish' ? 'publish' : 'draft', function (v) { state.status = v; });
 		var saveBtn = el('button', { type: 'button', class: 'button button-primary bgq-save', text: t.save, onclick: save });
 		return el('div', { class: 'bgq-header' }, [
 			title,
@@ -169,11 +171,11 @@
 			});
 			var answersField = el('div', { class: 'bgq-field' + (errors[path + '.answers'] ? ' has-error' : '') }, [el('label', { text: t.answers }), answers]);
 			if (errors[path + '.answers']) { answersField.appendChild(el('p', { class: 'bgq-field__error', text: errors[path + '.answers'] })); }
-			answersField.appendChild(el('button', { type: 'button', class: 'button', text: t.add_answer, onclick: function () { q.answers.push({ id: uid('a'), text: '', correct: false, points: {} }); markDirty(); render(); } }));
+			answersField.appendChild(el('button', { type: 'button', class: 'button', 'data-action': 'add-answer', text: t.add_answer, onclick: function () { q.answers.push({ id: uid('a'), text: '', correct: false, points: {} }); markDirty(); render(); } }));
 			card.appendChild(answersField);
 			list.appendChild(card);
 		});
-		var add = el('button', { type: 'button', class: 'button button-secondary', text: t.add_question, onclick: function () {
+		var add = el('button', { type: 'button', class: 'button button-secondary', 'data-action': 'add-question', text: t.add_question, onclick: function () {
 			state.questions.push({ id: uid('q'), text: '', image_id: 0, type: 'single', answers: [{ id: uid('a'), text: '', correct: true, points: {} }, { id: uid('a'), text: '', correct: false, points: {} }] });
 			markDirty(); render();
 		} });
@@ -209,7 +211,7 @@
 			if (B.woocommerce_active) { card.appendChild(field(t.product, productPicker(r), path + '.product_id')); }
 			list.appendChild(card);
 		});
-		var add = el('button', { type: 'button', class: 'button button-secondary', text: t.add_result, onclick: function () {
+		var add = el('button', { type: 'button', class: 'button button-secondary', 'data-action': 'add-result', text: t.add_result, onclick: function () {
 			state.results.push({ id: uid('r'), title: '', text: '', image_id: 0, button_label: '', button_url: '', product_id: 0, min: 0, max: 100 });
 			markDirty(); render();
 		} });
@@ -336,7 +338,7 @@
 					return;
 				}
 				errors = {}; dirty = false;
-				['mode', 'settings', 'questions', 'results', 'reward', 'title', 'status'].forEach(function (k) { state[k] = res.json[k]; });
+				['mode', 'settings', 'questions', 'results', 'reward', 'title', 'status', 'can_publish'].forEach(function (k) { state[k] = res.json[k]; });
 				render();
 				setStatus(t.saved, 'is-ok');
 			})
