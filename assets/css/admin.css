@@ -31,3 +31,15 @@
 .bgq-check-list label { display: block; margin: 4px 0; }
 .bgq-import { display: none; }
 .bgq-errors ul { list-style: disc; margin-left: 20px; }
+
+/* Analytics */
+.bgq-analytics-filter { margin: 12px 0 20px; }
+.bgq-stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; margin-bottom: 24px; }
+.bgq-tile { background: #fff; border: 1px solid #dcdcde; border-radius: 4px; padding: 14px 16px; }
+.bgq-tile__value { display: block; font-size: 1.8em; font-weight: 600; line-height: 1.1; }
+.bgq-tile__label { display: block; color: #646970; margin-top: 4px; }
+.bgq-bars { max-width: 720px; margin-bottom: 24px; }
+.bgq-bar-row { display: grid; grid-template-columns: minmax(120px, 1fr) 2fr 60px; gap: 12px; align-items: center; margin: 6px 0; }
+.bgq-bar { display: block; height: 14px; background: #f0f0f1; border-radius: 7px; overflow: hidden; }
+.bgq-bar__fill { display: block; height: 100%; background: #2271b1; }
+.bgq-bar-row__value { text-align: right; font-variant-numeric: tabular-nums; }

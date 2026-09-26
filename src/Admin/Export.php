@@ -30,10 +30,12 @@ class Export {
 	}
 
 	public static function handle() {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- The nonce itself; verified in can_export().
 		$nonce = isset( $_GET['_wpnonce'] ) ? sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ) : '';
 		if ( ! self::can_export( $nonce ) ) {
 			wp_die( esc_html__( 'You are not allowed to export entries.', 'beltoft-quiz' ), '', [ 'response' => 403 ] );
 		}
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Nonce verified above in can_export().
 		$quiz_id = isset( $_GET['quiz_id'] ) ? absint( wp_unslash( $_GET['quiz_id'] ) ) : 0;
 		$csv     = self::csv( [ 'quiz_id' => $quiz_id ] );
 

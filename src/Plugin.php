@@ -9,6 +9,7 @@ use Bgq\Rest\QuizConfigController;
 use Bgq\Admin\Builder;
 use Bgq\Admin\EntriesPage;
 use Bgq\Admin\Export;
+use Bgq\Admin\Analytics;
 use Bgq\Frontend\Shortcode;
 use Bgq\Frontend\Results;
 
@@ -27,6 +28,7 @@ class Plugin {
 		Builder::init(); // Admin-only hooks; inert on the front end and in CLI.
 		EntriesPage::init();
 		Export::init();
+		Analytics::init();
 		Results::init();
 		Shortcode::init();
 	}
