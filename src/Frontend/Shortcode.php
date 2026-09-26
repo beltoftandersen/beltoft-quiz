@@ -69,8 +69,11 @@ class Shortcode {
 			'token'    => Token::issue( $quiz_id ),
 			'rest_url' => esc_url_raw( rest_url( 'bgq/v1/attempts' ) ),
 			'i18n'     => [
+				/* translators: 1: current question number, 2: total questions */
 				'question_of'   => __( 'Question %1$s of %2$s', 'beltoft-quiz' ),
+				/* translators: %s: number of questions */
 				'questions'     => __( '%s questions', 'beltoft-quiz' ),
+				/* translators: %s: time limit as m:ss */
 				'time_limit'    => __( 'Time limit: %s', 'beltoft-quiz' ),
 				'time_left'     => __( 'Time left', 'beltoft-quiz' ),
 				'select_answer' => __( 'Please choose an answer.', 'beltoft-quiz' ),
@@ -82,8 +85,10 @@ class Shortcode {
 				'consent_req'   => __( 'Please accept the consent checkbox.', 'beltoft-quiz' ),
 				'sending'       => __( 'Checking your answers…', 'beltoft-quiz' ),
 				'error'         => __( 'Something went wrong. Please try again.', 'beltoft-quiz' ),
+				/* translators: 1: score percentage, 2: correct answers, 3: total questions */
 				'score_text'    => __( 'You scored %1$s%% (%2$s of %3$s correct).', 'beltoft-quiz' ),
 				'already'       => __( 'You have already taken this quiz. Here is your result.', 'beltoft-quiz' ),
+				/* translators: %s: gift card code */
 				'reward'        => __( 'Your gift card code: %s', 'beltoft-quiz' ),
 				'reward_sent'   => __( 'We have also emailed it to you.', 'beltoft-quiz' ),
 				'add_to_cart'   => __( 'Add to cart', 'beltoft-quiz' ),
