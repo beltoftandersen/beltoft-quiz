@@ -50,14 +50,17 @@ class EntriesTable extends \WP_List_Table {
 	 * Current filter values from the request (read-only list display).
 	 */
 	public static function filters(): array {
-		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- Read-only filters.
-		return [
-			'quiz_id' => isset( $_GET['quiz_id'] ) ? absint( wp_unslash( $_GET['quiz_id'] ) ) : 0,
-			'search'  => isset( $_GET['s'] ) ? sanitize_text_field( wp_unslash( $_GET['s'] ) ) : '',
-			'orderby' => isset( $_GET['orderby'] ) ? sanitize_key( wp_unslash( $_GET['orderby'] ) ) : 'created_at',
-			'order'   => isset( $_GET['order'] ) ? sanitize_key( wp_unslash( $_GET['order'] ) ) : 'desc',
-		];
-		// phpcs:enable WordPress.Security.NonceVerification.Recommended
+		// Read-only list filters; no state is changed from these values.
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$quiz_id = isset( $_GET['quiz_id'] ) ? absint( wp_unslash( $_GET['quiz_id'] ) ) : 0;
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$search = isset( $_GET['s'] ) ? sanitize_text_field( wp_unslash( $_GET['s'] ) ) : '';
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$orderby = isset( $_GET['orderby'] ) ? sanitize_key( wp_unslash( $_GET['orderby'] ) ) : 'created_at';
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$order = isset( $_GET['order'] ) ? sanitize_key( wp_unslash( $_GET['order'] ) ) : 'desc';
+
+		return [ 'quiz_id' => $quiz_id, 'search' => $search, 'orderby' => $orderby, 'order' => $order ];
 	}
 
 	public function prepare_items() {
