@@ -19,7 +19,7 @@ class Stats {
 		$config = Config::load( $quiz_id );
 
 		$now  = time();
-		$day  = gmdate( 'Y-m-d 00:00:00', $now );
+		$day  = self::today_start_utc();
 		$d7   = gmdate( 'Y-m-d H:i:s', $now - 7 * DAY_IN_SECONDS );
 		$d30  = gmdate( 'Y-m-d H:i:s', $now - 30 * DAY_IN_SECONDS );
 		$pass = (float) $config['settings']['pass_mark'];
@@ -61,6 +61,13 @@ class Stats {
 			'outcomes'  => $outcomes,
 			'questions' => self::question_rates( $quiz_id, $config ),
 		];
+	}
+
+	/**
+	 * Start of today in the site's timezone, as a UTC MySQL datetime.
+	 */
+	public static function today_start_utc(): string {
+		return (string) get_gmt_from_date( wp_date( 'Y-m-d' ) . ' 00:00:00' );
 	}
 
 	/**

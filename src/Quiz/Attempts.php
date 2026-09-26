@@ -70,11 +70,10 @@ class Attempts {
 		$table = $wpdb->prefix . 'bgq_attempts';
 
 		if ( $user_id > 0 ) {
+			// Logged-in visitors are identified by their account only (a shared IP must not link them to a guest).
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table.
 			$row = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}bgq_attempts WHERE quiz_id = %d AND user_id = %d ORDER BY id ASC LIMIT 1", $quiz_id, $user_id ) );
-			if ( $row ) {
-				return $row;
-			}
+			return $row ? $row : null;
 		}
 		if ( '' !== $email ) {
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table.

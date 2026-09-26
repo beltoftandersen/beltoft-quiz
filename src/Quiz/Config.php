@@ -118,11 +118,12 @@ class Config {
 			$accent = '#' . $accent[1] . $accent[1] . $accent[2] . $accent[2] . $accent[3] . $accent[3];
 		}
 
-		$labels = $d['labels'];
+		// Only custom labels are stored; empty means "use the translated default" at load time.
+		$labels = array_fill_keys( array_keys( $d['labels'] ), '' );
 		if ( is_array( $s['labels'] ?? null ) ) {
-			foreach ( $labels as $key => $default ) {
+			foreach ( $labels as $key => $unused ) {
 				$val = isset( $s['labels'][ $key ] ) ? sanitize_text_field( wp_strip_all_tags( (string) $s['labels'][ $key ] ) ) : '';
-				if ( '' !== $val ) {
+				if ( '' !== $val && $val !== $d['labels'][ $key ] ) {
 					$labels[ $key ] = $val;
 				}
 			}
@@ -292,7 +293,10 @@ class Config {
 			return $d;
 		}
 		$stored['settings']           = array_merge( $d['settings'], is_array( $stored['settings'] ?? null ) ? $stored['settings'] : [] );
-		$stored['settings']['labels'] = array_merge( $d['settings']['labels'], is_array( $stored['settings']['labels'] ?? null ) ? $stored['settings']['labels'] : [] );
+		$labels = is_array( $stored['settings']['labels'] ?? null ) ? $stored['settings']['labels'] : [];
+		foreach ( $d['settings']['labels'] as $key => $default ) {
+			$stored['settings']['labels'][ $key ] = '' !== trim( (string) ( $labels[ $key ] ?? '' ) ) ? (string) $labels[ $key ] : $default;
+		}
 		$stored['reward']             = array_merge( $d['reward'], is_array( $stored['reward'] ?? null ) ? $stored['reward'] : [] );
 
 		return array_merge( $d, $stored );

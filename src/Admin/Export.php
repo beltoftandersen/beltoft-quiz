@@ -101,10 +101,10 @@ class Export {
 	 */
 	private static function cell( $value ): string {
 		$value = (string) $value;
-		if ( '' !== $value && in_array( $value[0], [ '=', '+', '-', '@' ], true ) && ! is_numeric( $value ) ) {
+		if ( '' !== $value && in_array( $value[0], [ '=', '+', '-', '@', "\t", "\r" ], true ) && ! is_numeric( $value ) ) {
 			$value = "'" . $value;
 		}
-		if ( preg_match( '/[",\r\n]/', $value ) ) {
+		if ( preg_match( '/[",\r\n\t]/', $value ) ) {
 			return '"' . str_replace( '"', '""', $value ) . '"';
 		}
 		return $value;

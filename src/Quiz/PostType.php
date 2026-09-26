@@ -14,6 +14,23 @@ class PostType {
 	 */
 	public static function init() {
 		add_action( 'init', [ __CLASS__, 'register' ] );
+		add_action( 'before_delete_post', [ __CLASS__, 'delete_attempts' ], 10, 2 );
+	}
+
+	/**
+	 * Remove a quiz's attempts when it is permanently deleted (personal data must not linger).
+	 *
+	 * @param int           $post_id Post ID.
+	 * @param \WP_Post|null $post    Post.
+	 */
+	public static function delete_attempts( $post_id, $post = null ) {
+		$post = $post instanceof \WP_Post ? $post : get_post( $post_id );
+		if ( ! $post || self::TYPE !== $post->post_type ) {
+			return;
+		}
+		global $wpdb;
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table.
+		$wpdb->delete( $wpdb->prefix . 'bgq_attempts', [ 'quiz_id' => (int) $post_id ], [ '%d' ] );
 	}
 
 	/**

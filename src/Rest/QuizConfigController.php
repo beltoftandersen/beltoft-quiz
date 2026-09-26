@@ -62,6 +62,9 @@ class QuizConfigController {
 			$config->add_data( [ 'status' => 400, 'errors' => $config->get_error_data()['errors'] ?? [] ] );
 			return $config;
 		}
+		if ( ! empty( $raw['validate_only'] ) ) {
+			return rest_ensure_response( $config );
+		}
 		Config::save( $id, $config );
 
 		$post_update = [ 'ID' => $id ];

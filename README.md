@@ -2,7 +2,7 @@
 
 Build score and outcome quizzes, capture leads, recommend products and reward with gift cards. Lightweight, no framework.
 
-- Stable version: 1.0.1
+- Stable version: 1.0.2
 - Requires: WordPress 5.8+, PHP 7.4+ (tested up to WordPress 7.1)
 - Author: beltoft.net
 - Text domain: beltoft-quiz
@@ -33,6 +33,20 @@ Build a quiz under **Quizzes > Add New** and place `[beltoft_quiz id="123"]` any
 Entries are included in WordPress's personal data export and erasure tools, and a suggested privacy policy text is registered.
 
 ## Changelog
+
+### 1.0.2
+
+- Changed: New front-end design for the quiz player: square corners, a segmented progress strip (one block per question), solid tick boxes, rectangular buttons and a single accent rule. Inherits the theme font; the accent still comes from the quiz settings.
+- Changed: The timer turns red for the last ten seconds and is announced to screen readers at one minute and ten seconds instead of every second.
+- Fixed: Deleting a quiz now deletes its attempts.
+- Fixed: Logged-in visitors are matched by user only for the one-attempt rule, never by IP address.
+- Fixed: The dashboard's "today" count follows the site timezone.
+- Fixed: Default labels are no longer stored in the quiz, so they translate when the site language changes.
+- Fixed: Importing a quiz JSON file validates it on the server before anything is replaced.
+- Fixed: Builder saves go through wp.apiFetch, so REST nonces are refreshed on long editing sessions.
+- Fixed: The builder keeps keyboard focus after adding a question, answer or result, and picker fields are labelled for screen readers.
+- Fixed: The analytics quiz selector no longer relies on inline JavaScript.
+- Fixed: CSV export neutralises cells starting with a tab or carriage return.
 
 ### 1.0.1
 

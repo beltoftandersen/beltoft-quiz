@@ -4,7 +4,7 @@ Tags: quiz, survey, lead generation, product finder, woocommerce
 Requires at least: 5.8
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.0.1
+Stable tag: 1.0.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -53,6 +53,19 @@ With Beltoft Gift Cards active, enable the reward on a quiz and choose the amoun
 Yes. Entries are included in WordPress's personal data export and erasure by email, and a suggested privacy policy text is provided.
 
 == Changelog ==
+
+= 1.0.2 =
+* Changed: New front-end design for the quiz player: square corners, a segmented progress strip (one block per question), solid tick boxes, rectangular buttons and a single accent rule. Inherits the theme font; the accent still comes from the quiz settings.
+* Changed: The timer turns red for the last ten seconds and is announced to screen readers at one minute and ten seconds instead of every second.
+* Fixed: Deleting a quiz now deletes its attempts.
+* Fixed: Logged-in visitors are matched by user only for the one-attempt rule, never by IP address.
+* Fixed: The dashboard's "today" count follows the site timezone.
+* Fixed: Default labels are no longer stored in the quiz, so they translate when the site language changes.
+* Fixed: Importing a quiz JSON file validates it on the server before anything is replaced.
+* Fixed: Builder saves go through wp.apiFetch, so REST nonces are refreshed on long editing sessions.
+* Fixed: The builder keeps keyboard focus after adding a question, answer or result, and picker fields are labelled for screen readers.
+* Fixed: The analytics quiz selector no longer relies on inline JavaScript.
+* Fixed: CSV export neutralises cells starting with a tab or carriage return.
 
 = 1.0.1 =
 * Fixed: The quiz start token is now issued when the visitor presses Start through an uncacheable request, so page caches can no longer share one session between visitors or expire the quiz; the duplicate-submit guard is per visitor.

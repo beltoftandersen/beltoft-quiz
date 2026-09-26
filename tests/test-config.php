@@ -14,7 +14,7 @@ bgq_assert( ! is_wp_error( $c ), 'valid config accepted' );
 bgq_assert_eq( 90, $c['settings']['timer'], 'timer cast to int' );
 bgq_assert_eq( '#aabbcc', $c['settings']['accent'], 'accent normalised to 6-digit hex' );
 bgq_assert_eq( 'Go', $c['settings']['labels']['start'], 'labels stripped of tags' );
-bgq_assert_eq( Config::default_labels()['next'], $c['settings']['labels']['next'], 'missing labels take defaults' );
+bgq_assert_eq( '', $c['settings']['labels']['next'], 'missing labels stored empty (resolved to defaults at load)' );
 bgq_assert_eq( true, $c['questions'][0]['answers'][0]['correct'], 'correct kept' );
 bgq_assert_eq( false, $c['questions'][0]['answers'][1]['correct'], 'missing correct is false' );
 

@@ -35,12 +35,12 @@ class Analytics {
 				<input type="hidden" name="post_type" value="<?php echo esc_attr( PostType::TYPE ); ?>" />
 				<input type="hidden" name="page" value="<?php echo esc_attr( self::SLUG ); ?>" />
 				<label for="bgq-analytics-quiz"><?php esc_html_e( 'Quiz', 'beltoft-quiz' ); ?></label>
-				<select name="quiz_id" id="bgq-analytics-quiz" onchange="this.form.submit()">
+				<select name="quiz_id" id="bgq-analytics-quiz">
 					<?php foreach ( $quizzes as $q ) : ?>
 						<option value="<?php echo (int) $q->ID; ?>" <?php selected( $quiz_id, $q->ID ); ?>><?php echo esc_html( $q->post_title ); ?></option>
 					<?php endforeach; ?>
 				</select>
-				<noscript><?php submit_button( __( 'Show', 'beltoft-quiz' ), 'secondary', '', false ); ?></noscript>
+				<?php submit_button( __( 'Show', 'beltoft-quiz' ), 'secondary', '', false ); ?>
 			</form>
 			<?php
 			if ( ! $quiz_id ) {

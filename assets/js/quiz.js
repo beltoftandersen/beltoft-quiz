@@ -73,11 +73,11 @@
 
 	Quiz.prototype.renderStart = function () {
 		var self = this, s = this.cfg.settings;
-		var meta = [sprintf(this.i18n.questions, this.questions.length)];
-		if (s.timer > 0) { meta.push(sprintf(this.i18n.time_limit, formatTime(s.timer))); }
+		var meta = [el('span', { text: sprintf(this.i18n.questions, this.questions.length) })];
+		if (s.timer > 0) { meta.push(el('span', { text: sprintf(this.i18n.time_limit, formatTime(s.timer)) })); }
 		this.mount(el('div', { class: 'bgq-screen bgq-start' }, [
 			el('h2', { class: 'bgq-title', text: this.data.title, 'data-bgq-focus': true }),
-			el('p', { class: 'bgq-meta', text: meta.join(' · ') }),
+			el('p', { class: 'bgq-meta' }, meta),
 			el('button', { type: 'button', class: 'bgq-btn bgq-btn--primary', text: this.labels.start, onclick: function () { self.start(); } })
 		]));
 	};
@@ -124,6 +124,13 @@
 			self.remaining = total - Math.floor((Date.now() - self.startedAt) / 1000);
 			var out = self.root.querySelector('.bgq-timer-value');
 			if (out) { out.textContent = formatTime(Math.max(0, self.remaining)); }
+			var timer = self.root.querySelector('.bgq-timer');
+			if (timer) { timer.classList.toggle('is-low', self.remaining <= 10); }
+			// Announce only at milestones so screen readers are not read a countdown every second.
+			if (self.remaining === 60 || self.remaining === 10) {
+				var live = self.root.querySelector('.bgq-timer-live');
+				if (live) { live.textContent = self.i18n.time_left + ' ' + formatTime(self.remaining); }
+			}
 			if (self.remaining <= 0) { self.stopTimer(); self.timesUp(); }
 		}, 1000);
 	};
@@ -136,9 +143,10 @@
 
 	Quiz.prototype.timerNode = function () {
 		if (!(this.cfg.settings.timer > 0)) { return null; }
-		return el('div', { class: 'bgq-timer', role: 'timer', 'aria-live': 'polite' }, [
+		return el('div', { class: 'bgq-timer' + (this.remaining <= 10 ? ' is-low' : ''), role: 'timer' }, [
 			el('span', { class: 'bgq-timer-label', text: this.i18n.time_left + ' ' }),
-			el('span', { class: 'bgq-timer-value', text: formatTime(Math.max(0, this.remaining)) })
+			el('span', { class: 'bgq-timer-value', text: formatTime(Math.max(0, this.remaining)) }),
+			el('span', { class: 'bgq-timer-live bgq-visually-hidden', 'aria-live': 'polite', 'aria-atomic': 'true' })
 		]);
 	};
 
@@ -168,8 +176,12 @@
 		]);
 
 		var pct = Math.round(((this.index) / total) * 100);
+		var segments = [];
+		for (var n = 0; n < total; n++) {
+			segments.push(el('span', { class: 'bgq-progress__seg' + (n < this.index ? ' is-done' : (n === this.index ? ' is-current' : '')) }));
+		}
 		this.mount(el('div', { class: 'bgq-screen bgq-question' }, [
-			el('div', { class: 'bgq-progress', role: 'progressbar', 'aria-valuemin': '0', 'aria-valuemax': '100', 'aria-valuenow': String(pct) }, [el('span', { class: 'bgq-progress__bar', style: 'width:' + pct + '%' })]),
+			el('div', { class: 'bgq-progress', role: 'progressbar', 'aria-valuemin': '0', 'aria-valuemax': '100', 'aria-valuenow': String(pct) }, segments),
 			el('div', { class: 'bgq-topline' }, [
 				el('span', { class: 'bgq-count', text: sprintf(this.i18n.question_of, this.index + 1, total) }),
 				this.timerNode()

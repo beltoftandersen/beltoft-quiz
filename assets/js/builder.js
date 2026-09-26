@@ -27,7 +27,12 @@
 		return node;
 	}
 	function field(label, input, path) {
-		var wrap = el('div', { class: 'bgq-field' + (errors[path] ? ' has-error' : '') }, [el('label', { text: label, for: input.id }), input]);
+		var isControl = /^(INPUT|SELECT|TEXTAREA)$/.test(input.tagName);
+		if (!isControl && !input.id) { input.id = uid('g'); }
+		var labelId = uid('l');
+		var labelNode = el('label', { text: label, id: labelId, for: isControl ? input.id : null });
+		if (!isControl) { input.setAttribute('role', 'group'); input.setAttribute('aria-labelledby', labelId); }
+		var wrap = el('div', { class: 'bgq-field' + (errors[path] ? ' has-error' : '') }, [labelNode, input]);
 		if (errors[path]) { wrap.appendChild(el('p', { class: 'bgq-field__error', text: errors[path] })); }
 		return wrap;
 	}
@@ -54,6 +59,8 @@
 		return node;
 	}
 	function markDirty() { dirty = true; }
+	var pendingFocus = null;
+	function act(key, fn) { return function () { pendingFocus = key; fn(); }; }
 
 	function imagePicker(getId, setId) {
 		var wrap = el('div', { class: 'bgq-image' });
@@ -81,11 +88,11 @@
 		});
 	}
 
-	function moveItem(arr, i, dir) {
+	function moveItem(arr, i, dir, key) {
 		var j = i + dir;
 		if (j < 0 || j >= arr.length) { return; }
 		var tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp;
-		markDirty(); render();
+		pendingFocus = key; markDirty(); render();
 	}
 
 	/* ---------- sections ---------- */
@@ -142,9 +149,9 @@
 			card.appendChild(el('div', { class: 'bgq-item__bar' }, [
 				el('strong', { text: (qi + 1) + '.' }),
 				el('span', { class: 'bgq-item__tools' }, [
-					el('button', { type: 'button', class: 'button-link', text: t.move_up, onclick: function () { moveItem(state.questions, qi, -1); } }),
-					el('button', { type: 'button', class: 'button-link', text: t.move_down, onclick: function () { moveItem(state.questions, qi, 1); } }),
-					el('button', { type: 'button', class: 'button-link bgq-remove', text: t.remove, onclick: function () { state.questions.splice(qi, 1); markDirty(); render(); } })
+					el('button', { type: 'button', class: 'button-link', 'data-focus': 'q-up-' + q.id, text: t.move_up, onclick: function () { moveItem(state.questions, qi, -1, 'q-up-' + q.id); } }),
+					el('button', { type: 'button', class: 'button-link', 'data-focus': 'q-down-' + q.id, text: t.move_down, onclick: function () { moveItem(state.questions, qi, 1, 'q-down-' + q.id); } }),
+					el('button', { type: 'button', class: 'button-link bgq-remove', text: t.remove, onclick: act('add-question', function () { state.questions.splice(qi, 1); markDirty(); render(); }) })
 				])
 			]));
 			card.appendChild(field(t.question_text, input('text', q.text, function (v) { q.text = v; }, { class: 'large-text' }), path + '.text'));
@@ -166,19 +173,19 @@
 						row.appendChild(el('label', { class: 'bgq-inline bgq-points' }, [el('span', { text: r.title || ('#' + r.id) }), p]));
 					});
 				}
-				row.appendChild(el('button', { type: 'button', class: 'button-link bgq-remove', text: t.remove, onclick: function () { q.answers.splice(ai, 1); markDirty(); render(); } }));
+				row.appendChild(el('button', { type: 'button', class: 'button-link bgq-remove', text: t.remove, onclick: act('add-answer-' + q.id, function () { q.answers.splice(ai, 1); markDirty(); render(); }) }));
 				answers.appendChild(row);
 			});
 			var answersField = el('div', { class: 'bgq-field' + (errors[path + '.answers'] ? ' has-error' : '') }, [el('label', { text: t.answers }), answers]);
 			if (errors[path + '.answers']) { answersField.appendChild(el('p', { class: 'bgq-field__error', text: errors[path + '.answers'] })); }
-			answersField.appendChild(el('button', { type: 'button', class: 'button', 'data-action': 'add-answer', text: t.add_answer, onclick: function () { q.answers.push({ id: uid('a'), text: '', correct: false, points: {} }); markDirty(); render(); } }));
+			answersField.appendChild(el('button', { type: 'button', class: 'button', 'data-action': 'add-answer', 'data-focus': 'add-answer-' + q.id, text: t.add_answer, onclick: act('add-answer-' + q.id, function () { q.answers.push({ id: uid('a'), text: '', correct: false, points: {} }); markDirty(); render(); }) }));
 			card.appendChild(answersField);
 			list.appendChild(card);
 		});
-		var add = el('button', { type: 'button', class: 'button button-secondary', 'data-action': 'add-question', text: t.add_question, onclick: function () {
+		var add = el('button', { type: 'button', class: 'button button-secondary', 'data-action': 'add-question', 'data-focus': 'add-question', text: t.add_question, onclick: act('add-question', function () {
 			state.questions.push({ id: uid('q'), text: '', image_id: 0, type: 'single', answers: [{ id: uid('a'), text: '', correct: true, points: {} }, { id: uid('a'), text: '', correct: false, points: {} }] });
 			markDirty(); render();
-		} });
+		}) });
 		return section(t.questions, [errorFor('questions'), list, add], null, 'questions');
 	}
 
@@ -190,9 +197,9 @@
 			card.appendChild(el('div', { class: 'bgq-item__bar' }, [
 				el('strong', { text: (ri + 1) + '.' }),
 				el('span', { class: 'bgq-item__tools' }, [
-					el('button', { type: 'button', class: 'button-link', text: t.move_up, onclick: function () { moveItem(state.results, ri, -1); } }),
-					el('button', { type: 'button', class: 'button-link', text: t.move_down, onclick: function () { moveItem(state.results, ri, 1); } }),
-					el('button', { type: 'button', class: 'button-link bgq-remove', text: t.remove, onclick: function () { state.results.splice(ri, 1); markDirty(); render(); } })
+					el('button', { type: 'button', class: 'button-link', 'data-focus': 'r-up-' + r.id, text: t.move_up, onclick: function () { moveItem(state.results, ri, -1, 'r-up-' + r.id); } }),
+					el('button', { type: 'button', class: 'button-link', 'data-focus': 'r-down-' + r.id, text: t.move_down, onclick: function () { moveItem(state.results, ri, 1, 'r-down-' + r.id); } }),
+					el('button', { type: 'button', class: 'button-link bgq-remove', text: t.remove, onclick: act('add-result', function () { state.results.splice(ri, 1); markDirty(); render(); }) })
 				])
 			]));
 			card.appendChild(field(t.result_title, input('text', r.title, function (v) { r.title = v; }, { class: 'large-text' }), path + '.title'));
@@ -211,10 +218,10 @@
 			if (B.woocommerce_active) { card.appendChild(field(t.product, productPicker(r), path + '.product_id')); }
 			list.appendChild(card);
 		});
-		var add = el('button', { type: 'button', class: 'button button-secondary', 'data-action': 'add-result', text: t.add_result, onclick: function () {
+		var add = el('button', { type: 'button', class: 'button button-secondary', 'data-action': 'add-result', 'data-focus': 'add-result', text: t.add_result, onclick: act('add-result', function () {
 			state.results.push({ id: uid('r'), title: '', text: '', image_id: 0, button_label: '', button_url: '', product_id: 0, min: 0, max: 100 });
 			markDirty(); render();
-		} });
+		}) });
 		return section(t.results, [errorFor('results'), list, add], null, 'results');
 	}
 
@@ -293,12 +300,16 @@
 			var f = file.files[0]; if (!f) { return; }
 			var reader = new FileReader();
 			reader.onload = function () {
-				try {
-					var data = JSON.parse(reader.result);
-					if (!data || !data.questions) { throw new Error('bad'); }
-					['mode', 'settings', 'questions', 'results', 'reward'].forEach(function (k) { if (data[k] !== undefined) { state[k] = data[k]; } });
-					markDirty(); render();
-				} catch (e) { window.alert(t.import_bad); }
+				var data;
+				try { data = JSON.parse(reader.result); } catch (e) { data = null; }
+				if (!data || typeof data !== 'object' || !Array.isArray(data.questions)) { window.alert(t.import_bad); return; }
+				// Let the server sanitize the import before it touches the builder state.
+				request(Object.assign({ validate_only: true }, data)).then(function (res) {
+					var clean = res.json;
+					if (!res.ok) { errors = (clean && clean.data && clean.data.errors) || {}; window.alert(t.import_bad); render(); return; }
+					['mode', 'settings', 'questions', 'results', 'reward'].forEach(function (k) { state[k] = clean[k]; });
+					errors = {}; markDirty(); render();
+				}).catch(function () { window.alert(t.import_bad); });
 			};
 			reader.readAsText(f);
 		});
@@ -327,8 +338,7 @@
 		var btn = root.querySelector('.bgq-save');
 		btn.disabled = true; status.textContent = t.saving; status.className = 'bgq-save-status';
 		var body = Object.assign({ title: state.title, status: state.status }, exportable());
-		window.fetch(B.rest_url, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': B.nonce }, body: JSON.stringify(body) })
-			.then(function (r) { return r.json().then(function (json) { return { ok: r.ok, json: json }; }); })
+		request(body)
 			.then(function (res) {
 				btn.disabled = false;
 				if (!res.ok) {
@@ -343,6 +353,20 @@
 				setStatus(t.saved, 'is-ok');
 			})
 			.catch(function () { btn.disabled = false; setStatus(t.network_error, 'is-error'); });
+	}
+	// POST to the config endpoint. wp.apiFetch refreshes the REST nonce from responses, so a tab left open
+	// for hours can still save; window.fetch is the fallback when apiFetch is unavailable.
+	function request(body) {
+		if (window.wp && wp.apiFetch) {
+			return wp.apiFetch({ url: B.rest_url, method: 'POST', data: body, parse: false })
+				.then(function (r) { return r.json().then(function (json) { return { ok: r.ok, json: json }; }); })
+				.catch(function (r) {
+					if (r && typeof r.json === 'function') { return r.json().then(function (json) { return { ok: false, json: json }; }); }
+					return Promise.reject(r);
+				});
+		}
+		return window.fetch(B.rest_url, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': B.nonce }, body: JSON.stringify(body) })
+			.then(function (r) { return r.json().then(function (json) { return { ok: r.ok, json: json }; }); });
 	}
 	function setStatus(text, cls) {
 		var node = document.getElementById('bgq-save-status');
@@ -361,6 +385,11 @@
 		root.appendChild(sectionEmbed());
 		root.appendChild(el('p', {}, [el('a', { href: B.list_url, text: '← ' + t.back_to_list })]));
 		window.scrollTo(0, scrollY);
+		if (pendingFocus) {
+			var target = root.querySelector('[data-focus="' + pendingFocus + '"]');
+			pendingFocus = null;
+			if (target) { target.focus({ preventScroll: true }); }
+		}
 	}
 
 	window.addEventListener('beforeunload', function (e) { if (dirty) { e.preventDefault(); e.returnValue = t.unsaved; } });
