@@ -1,0 +1,117 @@
+{
+    "mode": "score",
+    "settings": {
+        "timer": 120,
+        "shuffle_questions": false,
+        "shuffle_answers": false,
+        "one_attempt": false,
+        "require_email": false,
+        "consent_text": "",
+        "accent": "#1f4a36",
+        "pass_mark": 50,
+        "labels": {
+            "start": "Start",
+            "next": "Next",
+            "back": "Back",
+            "submit": "See result",
+            "retry": "Try again"
+        }
+    },
+    "questions": [
+        {
+            "id": "q1",
+            "text": "Which note sits at the top of a perfume?",
+            "image_id": 0,
+            "type": "single",
+            "answers": [
+                {
+                    "id": "a1",
+                    "text": "Citrus",
+                    "correct": true
+                },
+                {
+                    "id": "a2",
+                    "text": "Musk",
+                    "correct": false
+                },
+                {
+                    "id": "a3",
+                    "text": "Vanilla",
+                    "correct": false
+                }
+            ]
+        },
+        {
+            "id": "q2",
+            "text": "Pick the two base notes",
+            "image_id": 0,
+            "type": "multiple",
+            "answers": [
+                {
+                    "id": "b1",
+                    "text": "Sandalwood",
+                    "correct": true
+                },
+                {
+                    "id": "b2",
+                    "text": "Bergamot",
+                    "correct": false
+                },
+                {
+                    "id": "b3",
+                    "text": "Amber",
+                    "correct": true
+                }
+            ]
+        },
+        {
+            "id": "q3",
+            "text": "How long does an eau de parfum usually last?",
+            "image_id": 0,
+            "type": "single",
+            "answers": [
+                {
+                    "id": "c1",
+                    "text": "1 hour",
+                    "correct": false
+                },
+                {
+                    "id": "c2",
+                    "text": "4 to 6 hours",
+                    "correct": true
+                }
+            ]
+        }
+    ],
+    "results": [
+        {
+            "id": "expert",
+            "title": "You are a nose!",
+            "text": "<p>Ready for our workshop.<\/p>",
+            "image_id": 0,
+            "button_label": "",
+            "button_url": "",
+            "product_id": 260,
+            "min": 67,
+            "max": 100
+        },
+        {
+            "id": "learner",
+            "title": "Good start",
+            "text": "<p>Come and learn more.<\/p>",
+            "image_id": 0,
+            "button_label": "",
+            "button_url": "",
+            "product_id": 0,
+            "min": 0,
+            "max": 66
+        }
+    ],
+    "reward": {
+        "enabled": false,
+        "amount": 10,
+        "expiry_days": 365,
+        "condition": "always",
+        "outcome_ids": []
+    }
+}
