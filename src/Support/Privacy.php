@@ -80,7 +80,7 @@ class Privacy {
 		}
 		wp_add_privacy_policy_content(
 			__( 'Beltoft Quiz', 'beltoft-quiz' ),
-			wp_kses_post( __( '<p>When you take a quiz on this site we store your answers, your score or result, the time it took, and a hashed form of your IP address. If the quiz asks for your name and email, we store those too and may email you a gift card. This data is kept until you ask us to delete it or the site owner deletes it.</p>', 'beltoft-quiz' ) )
+			'<p>' . esc_html__( 'When you take a quiz on this site we store your answers, your score or result, the time it took, and a hashed form of your IP address. If the quiz asks for your name and email, we store those too and may email you a gift card. This data is kept until you ask us to delete it or the site owner deletes it.', 'beltoft-quiz' ) . '</p>'
 		);
 	}
 }

@@ -40,6 +40,18 @@ Yes. Add a shortcode element and paste the quiz shortcode shown on the Quizzes l
 
 On the server. Correct answers and points never reach the browser.
 
+= How do product results work? =
+
+With WooCommerce active, pick a product on a result. The result screen shows the product with its price and an Add to cart button.
+
+= How does the gift card reward work? =
+
+With Beltoft Gift Cards active, enable the reward on a quiz and choose the amount and when to send it: always, when the quiz is passed, or for chosen results. The card is emailed to the address the visitor entered, or to the logged-in user's email.
+
+= Is visitor data covered by the privacy tools? =
+
+Yes. Entries are included in WordPress's personal data export and erasure by email, and a suggested privacy policy text is provided.
+
 == Changelog ==
 
 = 1.0.0 =

@@ -23,6 +23,15 @@ Build score and outcome quizzes, capture leads, recommend products and reward wi
 
 Build a quiz under **Quizzes > Add New** and place `[beltoft_quiz id="123"]` anywhere, including a Bricks shortcode element.
 
+## Integrations
+
+- **WooCommerce**: a result can be a product, shown with price and Add to cart.
+- **Beltoft Gift Cards**: send a gift card always, on passing, or for chosen results.
+
+## Privacy
+
+Entries are included in WordPress's personal data export and erasure tools, and a suggested privacy policy text is registered.
+
 ## Changelog
 
 ### 1.0.0

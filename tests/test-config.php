@@ -14,7 +14,7 @@ bgq_assert( ! is_wp_error( $c ), 'valid config accepted' );
 bgq_assert_eq( 90, $c['settings']['timer'], 'timer cast to int' );
 bgq_assert_eq( '#aabbcc', $c['settings']['accent'], 'accent normalised to 6-digit hex' );
 bgq_assert_eq( 'Go', $c['settings']['labels']['start'], 'labels stripped of tags' );
-bgq_assert_eq( 'Next', $c['settings']['labels']['next'], 'missing labels take defaults' );
+bgq_assert_eq( Config::default_labels()['next'], $c['settings']['labels']['next'], 'missing labels take defaults' );
 bgq_assert_eq( true, $c['questions'][0]['answers'][0]['correct'], 'correct kept' );
 bgq_assert_eq( false, $c['questions'][0]['answers'][1]['correct'], 'missing correct is false' );
 
@@ -52,5 +52,5 @@ $post_id = wp_insert_post( [ 'post_type' => 'bgq_quiz', 'post_title' => 'T', 'po
 bgq_test_register_cleanup( function () use ( $post_id ) { wp_delete_post( $post_id, true ); } );
 Config::save( $post_id, $c );
 bgq_assert_eq( 'score', Config::load( $post_id )['mode'], 'save/load round trip' );
-bgq_assert_eq( 'Next', Config::load( 999999999 )['settings']['labels']['next'], 'load of unknown quiz returns defaults' );
+bgq_assert_eq( Config::default_labels()['next'], Config::load( 999999999 )['settings']['labels']['next'], 'load of unknown quiz returns defaults' );
 bgq_assert( (bool) preg_match( '/^q_[a-z0-9]{6}$/', Config::new_id( 'q' ) ), 'new_id format' );
