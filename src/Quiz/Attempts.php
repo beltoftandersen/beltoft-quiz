@@ -157,15 +157,20 @@ class Attempts {
 		$values[] = $per_page;
 		$values[] = $offset;
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Custom table; clauses built from whitelisted values.
-		return (array) $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}bgq_attempts {$where} ORDER BY {$orderby} {$order} LIMIT %d OFFSET %d", $values ) );
+		$sql = "SELECT * FROM {$wpdb->prefix}bgq_attempts {$where} ORDER BY {$orderby} {$order} LIMIT %d OFFSET %d";
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Custom table; WHERE/ORDER BY built from whitelisted literals, values bound via prepare().
+		return (array) $wpdb->get_results( $wpdb->prepare( $sql, $values ) );
 	}
 
 	public static function count( array $args = [] ): int {
 		global $wpdb;
 		list( $where, $values ) = self::where( $args );
 		$sql = "SELECT COUNT(*) FROM {$wpdb->prefix}bgq_attempts {$where}";
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Custom table; clause built from whitelisted values.
-		return (int) ( $values ? $wpdb->get_var( $wpdb->prepare( $sql, $values ) ) : $wpdb->get_var( $sql ) );
+		if ( ! $values ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Custom table; no dynamic values in this branch.
+			return (int) $wpdb->get_var( $sql );
+		}
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Custom table; WHERE built from whitelisted literals, values bound via prepare().
+		return (int) $wpdb->get_var( $wpdb->prepare( $sql, $values ) );
 	}
 }
