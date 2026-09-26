@@ -9,6 +9,7 @@ use Bgq\Integrations\GiftCards;
 
 global $wpdb;
 $ip = '198.51.100.' . wp_rand( 1, 200 );
+delete_transient( 'bgq_rl_' . \Bgq\Quiz\Attempts::ip_hash( $ip ) );
 add_filter( 'bgq_client_ip', function () use ( &$ip ) { return $ip; } );
 
 function bgq_r_quiz( array $settings = [], array $extra = [] ): int {
@@ -58,7 +59,8 @@ wp_set_current_user( 0 );
 // 1b. Duplicate guard is per visitor: the same token from another IP is a new attempt, not A's result.
 $t = Token::issue( $quiz );
 list( $s1, $d1 ) = bgq_r_post( '/bgq/v1/attempts', [ 'quiz_id' => $quiz, 'token' => $t, 'answers' => [ 'q1' => [ 'a' ] ] ] );
-$ip = '198.51.100.250';
+$ip = '198.51.100.' . wp_rand( 201, 254 );
+delete_transient( 'bgq_rl_' . Attempts::ip_hash( $ip ) );
 list( $s2, $d2 ) = bgq_r_post( '/bgq/v1/attempts', [ 'quiz_id' => $quiz, 'token' => $t, 'answers' => [ 'q1' => [ 'b' ] ] ] );
 bgq_assert_eq( 200, $s2, 'second visitor accepted' );
 bgq_assert_eq( false, $d2['already'], 'second visitor is not handed the first result' );
