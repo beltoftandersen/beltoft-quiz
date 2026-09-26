@@ -5,6 +5,8 @@ namespace Bgq;
 use Bgq\Support\Installer;
 use Bgq\Quiz\PostType;
 use Bgq\Rest\AttemptsController;
+use Bgq\Rest\QuizConfigController;
+use Bgq\Admin\Builder;
 use Bgq\Frontend\Shortcode;
 use Bgq\Frontend\Results;
 
@@ -19,6 +21,8 @@ class Plugin {
 		Installer::maybe_upgrade();
 		PostType::init();
 		add_action( 'rest_api_init', [ AttemptsController::class, 'register' ] );
+		add_action( 'rest_api_init', [ QuizConfigController::class, 'register' ] );
+		Builder::init(); // Admin-only hooks; inert on the front end and in CLI.
 		Results::init();
 		Shortcode::init();
 	}

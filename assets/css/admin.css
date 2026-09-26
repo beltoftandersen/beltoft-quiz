@@ -1,0 +1,33 @@
+/* Beltoft Quiz — builder */
+.bgq-builder-wrap #bgq-builder { max-width: 960px; }
+.bgq-header { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin: 12px 0 16px; position: sticky; top: 32px; z-index: 5; background: #f0f0f1; padding: 10px 0; }
+.bgq-title-input { flex: 1 1 320px; font-size: 1.4em; padding: 6px 10px; }
+.bgq-header__actions { display: flex; gap: 8px; align-items: center; }
+.bgq-save-status { color: #646970; }
+.bgq-save-status.is-ok { color: #00a32a; }
+.bgq-save-status.is-error { color: #d63638; }
+.bgq-section { background: #fff; border: 1px solid #dcdcde; border-radius: 4px; padding: 16px 20px; margin-bottom: 16px; }
+.bgq-section h2 { margin: 0 0 12px; font-size: 1.1em; }
+.bgq-field { margin-bottom: 12px; }
+.bgq-field > label { display: block; font-weight: 600; margin-bottom: 4px; }
+.bgq-field--check > label { font-weight: 400; }
+.bgq-field.has-error > input, .bgq-field.has-error > textarea { border-color: #d63638; }
+.bgq-field__error { color: #d63638; margin: 4px 0 0; }
+.bgq-item { border: 1px solid #dcdcde; border-radius: 4px; padding: 12px 16px; margin-bottom: 12px; background: #fbfbfb; }
+.bgq-item.has-error { border-color: #d63638; }
+.bgq-item__bar { display: flex; justify-content: space-between; margin-bottom: 8px; }
+.bgq-item__tools .button-link { margin-left: 10px; }
+.bgq-remove { color: #d63638; }
+.bgq-answer-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 6px; }
+.bgq-inline { white-space: nowrap; }
+.bgq-points span { margin-right: 4px; }
+.bgq-range { display: flex; gap: 6px; align-items: center; }
+.bgq-image__preview { display: block; max-width: 120px; max-height: 80px; margin-bottom: 6px; border-radius: 4px; }
+.bgq-labels { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px 16px; margin-top: 8px; }
+.bgq-details summary { cursor: pointer; font-weight: 600; }
+.bgq-product-picker__results { margin: 4px 0 0; border: 1px solid #dcdcde; background: #fff; max-height: 180px; overflow: auto; }
+.bgq-product-picker__results:empty { display: none; }
+.bgq-product-picker__results li { margin: 0; padding: 4px 8px; }
+.bgq-check-list label { display: block; margin: 4px 0; }
+.bgq-import { display: none; }
+.bgq-errors ul { list-style: disc; margin-left: 20px; }
