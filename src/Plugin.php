@@ -10,6 +10,7 @@ use Bgq\Admin\Builder;
 use Bgq\Admin\EntriesPage;
 use Bgq\Admin\Export;
 use Bgq\Admin\Analytics;
+use Bgq\Integrations\GiftCards;
 use Bgq\Frontend\Shortcode;
 use Bgq\Frontend\Results;
 
@@ -29,6 +30,7 @@ class Plugin {
 		EntriesPage::init();
 		Export::init();
 		Analytics::init();
+		GiftCards::init();
 		Results::init();
 		Shortcode::init();
 	}
