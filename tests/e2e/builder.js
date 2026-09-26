@@ -15,6 +15,7 @@ const HOST = new URL(ADMIN).hostname;
   const out = []; const log = (ok, msg) => { const line = (ok ? '  ok   - ' : '  FAIL - ') + msg; out.push(line); console.log(line); };
 
   await page.goto(ADMIN + 'post-new.php?post_type=bgq_quiz', { waitUntil: 'networkidle' });
+  await page.waitForSelector('#bgq-builder .bgq-header', { timeout: 30000 });
   log(await page.locator('#bgq-builder .bgq-header').count() === 1, 'builder replaces the editor');
   log(await page.locator('#wpfooter').count() === 1, 'single admin footer');
   await page.fill('.bgq-title-input', 'E2E built quiz');
@@ -43,6 +44,7 @@ const HOST = new URL(ADMIN).hostname;
   log(/Saved/.test(status), 'save reports success (' + status.trim() + ')');
   const savedId = await page.evaluate(() => window.bgq_builder.quiz_id);
   await page.goto(ADMIN + 'post.php?post=' + savedId + '&action=edit', { waitUntil: 'networkidle' });
+  await page.waitForSelector('#bgq-builder .bgq-header', { timeout: 30000 });
   log((await page.locator('.bgq-title-input').inputValue()) === 'E2E built quiz', 'title persisted after reload');
   log(await page.locator('.bgq-section[data-section=questions]').locator('.bgq-item').count() === 2, 'questions persisted');
   log((await page.locator('.bgq-section[data-section=results]').locator('.bgq-item').first().locator('input.large-text').first().inputValue()) === 'Top', 'result persisted');
