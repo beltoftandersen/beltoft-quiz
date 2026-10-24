@@ -43,15 +43,25 @@ bgq_assert_eq( 'score', Config::load( $id )['mode'], 'invalid save does not over
 list( $status ) = bgq_t_cfg( 999999999, 'POST', $valid );
 bgq_assert_eq( 404, $status, 'unknown quiz 404' );
 
+// A product of its own, so the test does not depend on what the site's catalogue happens to hold.
+$preview_product = new WC_Product_Simple();
+$preview_product->set_name( 'BGQ test product' );
+$preview_product->set_status( 'publish' );
+$preview_product->set_regular_price( '1' );
+$preview_product->set_manage_stock( false );
+$preview_product->set_stock_status( 'instock' );
+$preview_product_id = $preview_product->save();
+bgq_test_register_cleanup( function () use ( $preview_product_id ) { wp_delete_post( $preview_product_id, true ); } );
+
 $preview = [
 	'mode'      => 'product',
-	'questions' => [ [ 'id' => 'qp', 'text' => 'Pick', 'type' => 'single', 'answers' => [ [ 'id' => 'ap', 'text' => 'Match', 'effects' => [ [ 'target' => 'product', 'product_id' => 123, 'action' => 'boost', 'weight' => 2 ] ] ], [ 'id' => 'bp', 'text' => 'Other' ] ] ] ],
+	'questions' => [ [ 'id' => 'qp', 'text' => 'Pick', 'type' => 'single', 'answers' => [ [ 'id' => 'ap', 'text' => 'Match', 'effects' => [ [ 'target' => 'product', 'product_id' => $preview_product_id, 'action' => 'boost', 'weight' => 2 ] ] ], [ 'id' => 'bp', 'text' => 'Other' ] ] ] ],
 	'results'   => [ [ 'id' => 'rp', 'title' => 'Preview result' ] ],
 	'preview_answers' => [ 'qp' => [ 'ap' ] ],
 ];
 list( $status, $data ) = bgq_t_cfg( $id, 'POST', $preview );
 bgq_assert_eq( 200, $status, 'admin product preview responds' );
-bgq_assert_eq( [ 123 ], $data['grade']['product_ids'], 'preview returns ranked product ids' );
+bgq_assert_eq( [ $preview_product_id ], $data['grade']['product_ids'], 'preview returns ranked product ids' );
 bgq_assert_eq( 'Preview result', $data['result_title'], 'preview returns the result title' );
 bgq_assert_eq( 'score', Config::load( $id )['mode'], 'preview does not persist config' );
 
