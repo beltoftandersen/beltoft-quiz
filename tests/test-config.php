@@ -34,6 +34,42 @@ bgq_assert( is_wp_error( Config::validate( $one_answer ) ), 'question with one a
 $outcome = [ 'mode' => 'outcome', 'questions' => [ [ 'id' => 'q1', 'text' => 'Pick', 'type' => 'single', 'answers' => [ [ 'id' => 'a1', 'text' => 'A', 'points' => [ 'r1' => 2, 'zzz' => 5 ] ], [ 'id' => 'a2', 'text' => 'B' ] ] ] ], 'results' => [ [ 'id' => 'r1', 'title' => 'Result A' ] ] ];
 $oc = Config::validate( $outcome );
 bgq_assert( ! is_wp_error( $oc ) && [ 'r1' => 2 ] === $oc['questions'][0]['answers'][0]['points'], 'points for unknown results dropped' );
+bgq_assert_eq( 'result_products', $oc['settings']['product_recommendation'], 'legacy quiz without answer products infers result-product recommendations' );
+
+$answer_product = $outcome;
+$answer_product['questions'][0]['answers'][0]['products'] = [ 42 ];
+$apc = Config::validate( $answer_product );
+bgq_assert_eq( 'answer_matches', $apc['settings']['product_recommendation'], 'legacy quiz with answer products infers answer matching' );
+
+$answer_product['settings']['product_recommendation'] = 'result_products';
+$apc = Config::validate( $answer_product );
+bgq_assert_eq( 'result_products', $apc['settings']['product_recommendation'], 'explicit recommendation method is preserved' );
+
+$finder = Config::validate( [
+	'mode'      => 'product',
+	'questions' => [ [ 'id' => 'qf', 'text' => 'Hair?', 'type' => 'single', 'answers' => [
+		[ 'id' => 'dry', 'text' => 'Dry', 'effects' => [ [ 'target' => 'product', 'product_id' => 123, 'action' => 'boost', 'weight' => 20 ], [ 'target' => 'term', 'taxonomy' => 'product_cat', 'term_id' => 4, 'action' => 'exclude' ], [ 'target' => 'term', 'taxonomy' => 'category', 'term_id' => 8, 'action' => 'boost' ] ] ],
+		[ 'id' => 'normal', 'text' => 'Normal' ],
+	] ] ],
+	'results'   => [ [ 'id' => 'recommendations', 'title' => 'Your products' ] ],
+] );
+bgq_assert( ! is_wp_error( $finder ), 'product finder config accepted' );
+bgq_assert_eq( 'product_rules', $finder['settings']['product_recommendation'], 'product finder always uses product rules' );
+bgq_assert_eq( 10, $finder['questions'][0]['answers'][0]['effects'][0]['weight'], 'product rule strength capped at ten' );
+bgq_assert_eq( 2, count( $finder['questions'][0]['answers'][0]['effects'] ), 'invalid product taxonomy rule removed' );
+
+$finder_blank = [
+	'mode'      => 'product',
+	'questions' => [ [ 'id' => 'qf', 'text' => 'Pick', 'type' => 'single', 'answers' => [ [ 'id' => 'a', 'text' => '', 'effects' => [ [ 'target' => 'product', 'product_id' => 1, 'action' => 'boost' ] ] ], [ 'id' => 'b', 'text' => 'B' ] ] ] ],
+	'results'   => [ [ 'id' => 'r', 'title' => 'R' ] ],
+];
+bgq_assert( is_wp_error( Config::validate( $finder_blank ) ), 'blank answer text is rejected server-side' );
+$finder_blank['questions'][0]['answers'][0]['text'] = 'A';
+$finder_blank['questions'][0]['answers'][0]['effects'] = [];
+bgq_assert( is_wp_error( Config::validate( $finder_blank ) ), 'product finder without a boost or fallback is rejected server-side' );
+$finder_blank['results'][] = [ 'id' => 'r2', 'title' => 'Second', 'product_ids' => [ 1 ] ];
+$multiple_results = Config::validate( $finder_blank );
+bgq_assert( is_wp_error( $multiple_results ) && isset( $multiple_results->get_error_data()['errors']['results'] ), 'product finder with multiple result screens is rejected server-side' );
 
 $dupe = $raw;
 $dupe['questions'][0]['answers'][1]['id'] = 'a1';

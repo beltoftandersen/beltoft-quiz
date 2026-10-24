@@ -107,8 +107,12 @@
 .bgq-result__text > :last-child { margin-bottom: 0; }
 
 .bgq-product { display: grid; grid-template-columns: 128px 1fr; gap: 20px; align-items: center; margin-top: 28px; padding: 18px; border: 2px solid var(--bgq-line-strong); }
+.bgq-products { display: grid; grid-template-columns: repeat( auto-fill, minmax( 200px, 1fr ) ); gap: 16px; margin-top: 28px; }
+.bgq-products .bgq-product { grid-template-columns: 1fr; align-items: start; margin-top: 0; }
+.bgq-products .bgq-product__actions { flex-direction: column; align-items: stretch; }
 .bgq-product__image { width: 100%; height: auto; display: block; }
 .bgq-product__name { font-size: 1.125rem; margin-bottom: 4px; }
+.bgq-product__reason { margin: 0 0 10px; color: var(--bgq-muted); font-size: 0.875rem; }
 .bgq-product__price { margin-bottom: 14px; }
 .bgq-product__actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .bgq-product .bgq-btn { min-height: 42px; padding: 8px 18px; font-size: 0.9375rem; }
@@ -124,3 +128,9 @@
 .bgq-notice { padding: 10px 12px; border-left: 3px solid #a8231b; background: #fdecec; font-size: 0.9rem; }
 
 .bgq-visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* Add to cart (Bricks AJAX): its adding state */
+.bgq-add.bricks-cart-adding, .bgq-add.disabled { opacity: .6; cursor: progress; }
+/* The theme styles WooCommerce's .add_to_cart_button (capitals, its own size): keep the quiz's button look. */
+.bgq .bgq-btn.add_to_cart_button { text-transform: none; letter-spacing: normal; font-weight: 600; width: auto; max-width: 100%; }
+.bgq .bgq-products .bgq-product { min-width: 0; }

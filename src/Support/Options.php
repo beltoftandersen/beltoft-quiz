@@ -17,6 +17,12 @@ class Options {
 	public static function defaults() {
 		return [
 			'cleanup_on_uninstall' => '0',
+			'newsletter_enabled'   => '0',
+			'newsletter_label'     => '',
+			'newsletter_url'       => '',
+			'newsletter_list_id'   => '',
+			'newsletter_api_key'   => '',
+			'newsletter_source'    => 'quiz',
 		];
 	}
 
@@ -54,6 +60,20 @@ class Options {
 		$out   = [];
 
 		$out['cleanup_on_uninstall'] = ! empty( $input['cleanup_on_uninstall'] ) ? '1' : '0';
+
+		$out['newsletter_enabled'] = ! empty( $input['newsletter_enabled'] ) ? '1' : '0';
+		$out['newsletter_label']   = isset( $input['newsletter_label'] ) ? sanitize_text_field( (string) $input['newsletter_label'] ) : '';
+		$url                       = isset( $input['newsletter_url'] ) ? esc_url_raw( trim( (string) $input['newsletter_url'] ), [ 'https', 'http' ] ) : '';
+		$out['newsletter_url']     = $url;
+		$out['newsletter_list_id'] = isset( $input['newsletter_list_id'] ) ? sanitize_text_field( (string) $input['newsletter_list_id'] ) : '';
+		// An empty key field keeps the saved key (the field is never printed back).
+		$key                       = isset( $input['newsletter_api_key'] ) ? trim( sanitize_text_field( (string) $input['newsletter_api_key'] ) ) : '';
+		$out['newsletter_api_key'] = '' !== $key ? $key : (string) self::get( 'newsletter_api_key' );
+		$source                    = isset( $input['newsletter_source'] ) ? sanitize_key( (string) $input['newsletter_source'] ) : '';
+		$out['newsletter_source']  = '' !== $source ? $source : 'quiz';
+		if ( ! empty( $input['newsletter_api_key_clear'] ) ) {
+			$out['newsletter_api_key'] = '';
+		}
 
 		self::$cache = null;
 

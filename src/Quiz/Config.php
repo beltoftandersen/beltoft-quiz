@@ -9,9 +9,22 @@ defined( 'ABSPATH' ) || exit;
  */
 class Config {
 
-	const MODES = [ 'score', 'outcome' ];
+	const MODES = [ 'score', 'outcome', 'product' ];
 	const TYPES = [ 'single', 'multiple' ];
+	const PRODUCT_RECOMMENDATIONS = [ 'result_products', 'answer_matches', 'product_rules' ];
 	const REWARD_CONDITIONS = [ 'always', 'pass', 'outcome' ];
+	const MAX_PRODUCTS      = 12;
+
+	/**
+	 * Product ids from raw input: positive integers, each once, in order, at most MAX_PRODUCTS.
+	 *
+	 * @param mixed $raw List of ids.
+	 * @return int[]
+	 */
+	public static function product_ids( $raw ): array {
+		$ids = array_values( array_unique( array_filter( array_map( 'absint', is_array( $raw ) ? $raw : [] ) ) ) );
+		return array_slice( $ids, 0, self::MAX_PRODUCTS );
+	}
 
 	/**
 	 * Default configuration.
@@ -30,6 +43,8 @@ class Config {
 				'consent_text'      => '',
 				'accent'            => '#1f4a36',
 				'pass_mark'         => 50,
+				'max_products'      => 3,
+				'product_recommendation' => 'result_products',
 				'labels'            => self::default_labels(),
 			],
 			'questions' => [],
@@ -97,6 +112,18 @@ class Config {
 		if ( empty( $out['questions'] ) ) {
 			$errors['questions'] = __( 'Add at least one question.', 'beltoft-quiz' );
 		}
+		if ( ! in_array( $out['settings']['product_recommendation'], self::PRODUCT_RECOMMENDATIONS, true ) ) {
+			$out['settings']['product_recommendation'] = self::infer_product_recommendation( $out['questions'] );
+		}
+		if ( 'product' === $mode ) {
+			$out['settings']['product_recommendation'] = 'product_rules';
+			if ( 1 !== count( $out['results'] ) ) {
+				$errors['results'] = __( 'Product Finder needs exactly one result screen.', 'beltoft-quiz' );
+			}
+			if ( ! self::has_product_source( $out['questions'], $out['results'] ) ) {
+				$errors['product_rules'] = __( 'Add at least one boost rule or fallback product.', 'beltoft-quiz' );
+			}
+		}
 
 		$out['reward'] = self::sanitize_reward( is_array( $raw['reward'] ?? null ) ? $raw['reward'] : [], $result_ids, $errors );
 
@@ -129,6 +156,8 @@ class Config {
 			}
 		}
 
+		$recommendation = isset( $s['product_recommendation'] ) ? sanitize_key( (string) $s['product_recommendation'] ) : '';
+
 		return [
 			'timer'             => isset( $s['timer'] ) ? min( 86400, absint( $s['timer'] ) ) : 0,
 			'shuffle_questions' => ! empty( $s['shuffle_questions'] ),
@@ -138,6 +167,8 @@ class Config {
 			'consent_text'      => isset( $s['consent_text'] ) ? wp_kses( (string) $s['consent_text'], [ 'a' => [ 'href' => [], 'target' => [] ] ] ) : '',
 			'accent'            => $accent ? strtolower( $accent ) : $d['accent'],
 			'pass_mark'         => isset( $s['pass_mark'] ) ? min( 100, absint( $s['pass_mark'] ) ) : $d['pass_mark'],
+			'max_products'      => isset( $s['max_products'] ) ? max( 1, min( self::MAX_PRODUCTS, absint( $s['max_products'] ) ) ) : $d['max_products'],
+			'product_recommendation' => in_array( $recommendation, self::PRODUCT_RECOMMENDATIONS, true ) ? $recommendation : '',
 			'labels'            => $labels,
 		];
 	}
@@ -167,6 +198,14 @@ class Config {
 				'button_url'   => isset( $r['button_url'] ) ? esc_url_raw( (string) $r['button_url'] ) : '',
 				'product_id'   => isset( $r['product_id'] ) ? absint( $r['product_id'] ) : 0,
 			];
+			// Several products per result; an older single product_id becomes the first of them. product_id stays the first, for older readers.
+			$ids = self::product_ids( $r['product_ids'] ?? [] );
+			if ( $item['product_id'] && ! in_array( $item['product_id'], $ids, true ) ) {
+				array_unshift( $ids, $item['product_id'] );
+				$ids = array_slice( $ids, 0, self::MAX_PRODUCTS );
+			}
+			$item['product_ids'] = $ids;
+			$item['product_id']  = $ids ? $ids[0] : 0;
 			if ( 'score' === $mode ) {
 				$item['min'] = isset( $r['min'] ) ? min( 100, absint( $r['min'] ) ) : 0;
 				$item['max'] = isset( $r['max'] ) ? min( 100, absint( $r['max'] ) ) : 100;
@@ -217,9 +256,14 @@ class Config {
 				$seen_a[ $aid ] = true;
 
 				$answer = [
-					'id'   => $aid,
-					'text' => isset( $a['text'] ) ? sanitize_text_field( (string) $a['text'] ) : '',
+					'id'       => $aid,
+					'text'     => isset( $a['text'] ) ? sanitize_text_field( (string) $a['text'] ) : '',
+					'products' => self::product_ids( $a['products'] ?? [] ), // the products this answer fits (product recommendations)
 				];
+				if ( '' === $answer['text'] ) {
+					$errors[ "questions.$qi.answers." . count( $answers ) . '.text' ] = __( 'Enter the answer text.', 'beltoft-quiz' );
+				}
+				$answer['effects'] = self::sanitize_product_effects( $a['effects'] ?? [] );
 				if ( 'score' === $mode ) {
 					$answer['correct'] = ! empty( $a['correct'] );
 					if ( $answer['correct'] ) {
@@ -261,6 +305,67 @@ class Config {
 	}
 
 	/**
+	 * Whether Product Finder can produce at least one recommendation.
+	 */
+	private static function has_product_source( array $questions, array $results ): bool {
+		foreach ( $questions as $question ) {
+			foreach ( $question['answers'] as $answer ) {
+				foreach ( (array) ( $answer['effects'] ?? [] ) as $effect ) {
+					if ( 'boost' === ( $effect['action'] ?? '' ) ) {
+						return true;
+					}
+				}
+			}
+		}
+		foreach ( $results as $result ) {
+			if ( ! empty( $result['product_ids'] ) || ! empty( $result['product_id'] ) ) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Product Finder rules attached to an answer.
+	 *
+	 * Product targets contain product_id. Term targets contain a WooCommerce
+	 * product taxonomy and term_id. Boosts have a 1–10 weight; excludes always
+	 * remove matching products.
+	 */
+	private static function sanitize_product_effects( $raw ): array {
+		$out = [];
+		foreach ( array_slice( is_array( $raw ) ? array_values( $raw ) : [], 0, 24 ) as $effect ) {
+			if ( ! is_array( $effect ) ) {
+				continue;
+			}
+			$target = sanitize_key( (string) ( $effect['target'] ?? 'product' ) );
+			$action = sanitize_key( (string) ( $effect['action'] ?? 'boost' ) );
+			if ( ! in_array( $target, [ 'product', 'term' ], true ) || ! in_array( $action, [ 'boost', 'exclude' ], true ) ) {
+				continue;
+			}
+			$item = [
+				'target' => $target,
+				'action' => $action,
+				'weight' => 'exclude' === $action ? 0 : max( 1, min( 10, absint( $effect['weight'] ?? 1 ) ) ),
+			];
+			if ( 'product' === $target ) {
+				$item['product_id'] = absint( $effect['product_id'] ?? 0 );
+				if ( ! $item['product_id'] ) {
+					continue;
+				}
+			} else {
+				$item['taxonomy'] = sanitize_key( (string) ( $effect['taxonomy'] ?? '' ) );
+				$item['term_id']  = absint( $effect['term_id'] ?? 0 );
+				if ( ! $item['term_id'] || ! preg_match( '/^(product_cat|product_tag|pa_[a-z0-9_-]+)$/', $item['taxonomy'] ) ) {
+					continue;
+				}
+			}
+			$out[] = $item;
+		}
+		return $out;
+	}
+
+	/**
 	 * Reward block.
 	 */
 	private static function sanitize_reward( array $r, array $result_ids, array &$errors ): array {
@@ -292,7 +397,15 @@ class Config {
 		if ( ! is_array( $stored ) ) {
 			return $d;
 		}
-		$stored['settings']           = array_merge( $d['settings'], is_array( $stored['settings'] ?? null ) ? $stored['settings'] : [] );
+		$stored_settings              = is_array( $stored['settings'] ?? null ) ? $stored['settings'] : [];
+		$has_recommendation           = in_array( $stored_settings['product_recommendation'] ?? '', self::PRODUCT_RECOMMENDATIONS, true );
+		$stored['settings']           = array_merge( $d['settings'], $stored_settings );
+		if ( ! $has_recommendation ) {
+			$stored['settings']['product_recommendation'] = self::infer_product_recommendation( is_array( $stored['questions'] ?? null ) ? $stored['questions'] : [] );
+		}
+		if ( 'product' === ( $stored['mode'] ?? '' ) ) {
+			$stored['settings']['product_recommendation'] = 'product_rules';
+		}
 		$labels = is_array( $stored['settings']['labels'] ?? null ) ? $stored['settings']['labels'] : [];
 		foreach ( $d['settings']['labels'] as $key => $default ) {
 			$stored['settings']['labels'][ $key ] = '' !== trim( (string) ( $labels[ $key ] ?? '' ) ) ? (string) $labels[ $key ] : $default;
@@ -300,6 +413,22 @@ class Config {
 		$stored['reward']             = array_merge( $d['reward'], is_array( $stored['reward'] ?? null ) ? $stored['reward'] : [] );
 
 		return array_merge( $d, $stored );
+	}
+
+	/**
+	 * Legacy quizzes did not name their recommendation method. If any answer has
+	 * products, preserve the old answer-matching behaviour; otherwise use the
+	 * products assigned to the winning result.
+	 */
+	private static function infer_product_recommendation( array $questions ): string {
+		foreach ( $questions as $question ) {
+			foreach ( (array) ( $question['answers'] ?? [] ) as $answer ) {
+				if ( ! empty( $answer['products'] ) ) {
+					return 'answer_matches';
+				}
+			}
+		}
+		return 'result_products';
 	}
 
 	/**

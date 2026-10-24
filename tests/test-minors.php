@@ -5,6 +5,8 @@ use Bgq\Quiz\Attempts;
 use Bgq\Quiz\Config;
 use Bgq\Quiz\Stats;
 use Bgq\Admin\Export;
+use Bgq\Integrations\Newsletter;
+use Bgq\Support\Options;
 
 global $wpdb;
 
@@ -50,3 +52,23 @@ $loaded = Config::load( $q4 );
 bgq_assert_eq( Config::default_labels()['start'], $loaded['settings']['labels']['start'], 'empty label resolves to the (translated) default at load' );
 bgq_assert_eq( 'Onward', $loaded['settings']['labels']['next'], 'custom label survives load' );
 bgq_assert_eq( Config::default_labels()['start'], Config::public_view( $loaded )['settings']['labels']['start'], 'public view carries resolved labels' );
+
+// 11. Newsletter webhooks use WordPress's SSRF-safe HTTP request path.
+$old_options = get_option( Options::OPTION );
+update_option( Options::OPTION, array_merge( Options::defaults(), [ 'newsletter_url' => 'https://example.test/hook' ] ) );
+Options::invalidate_cache();
+$safe_args = null;
+$intercept = function ( $pre, $args ) use ( &$safe_args ) {
+	$safe_args = $args;
+	return [ 'headers' => [], 'body' => '', 'response' => [ 'code' => 204, 'message' => 'No Content' ], 'cookies' => [], 'filename' => null ];
+};
+add_filter( 'pre_http_request', $intercept, 10, 2 );
+Newsletter::send( 'safe@example.test', 1 );
+remove_filter( 'pre_http_request', $intercept, 10 );
+bgq_assert( ! empty( $safe_args['reject_unsafe_urls'] ), 'newsletter webhook rejects unsafe URLs' );
+if ( false === $old_options ) {
+	delete_option( Options::OPTION );
+} else {
+	update_option( Options::OPTION, $old_options );
+}
+Options::invalidate_cache();

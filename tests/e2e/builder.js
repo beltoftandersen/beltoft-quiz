@@ -19,7 +19,18 @@ const HOST = new URL(ADMIN).hostname;
   log(await page.locator('#bgq-builder .bgq-header').count() === 1, 'builder replaces the editor');
   log(await page.locator('#wpfooter').count() === 1, 'single admin footer');
   await page.fill('.bgq-title-input', 'E2E built quiz');
+  log(await page.locator('.bgq-steps .bgq-step').count() === 5, 'five guided builder steps');
+  // Results are defined before questions.
+  await page.locator('.bgq-steps .bgq-step').nth(1).click();
+  const resSection = page.locator('.bgq-section[data-section=results]');
+  for (let i = 0; i < 2; i++) { await page.locator('[data-action=add-result]').click(); }
+  const results = resSection.locator('.bgq-item');
+  await results.nth(0).locator('input.large-text').first().fill('Top');
+  await results.nth(0).locator('.bgq-range input').nth(0).fill('50'); await results.nth(0).locator('.bgq-range input').nth(1).fill('100');
+  await results.nth(1).locator('input.large-text').first().fill('Low');
+  await results.nth(1).locator('.bgq-range input').nth(0).fill('0'); await results.nth(1).locator('.bgq-range input').nth(1).fill('49');
   // Two questions with answers.
+  await page.locator('.bgq-steps .bgq-step').nth(2).click();
   for (let i = 0; i < 2; i++) { await page.locator('[data-action=add-question]').click(); }
   const items = page.locator('.bgq-section[data-section=questions]').locator('.bgq-item');
   log(await items.count() === 2, 'two questions added');
@@ -29,14 +40,6 @@ const HOST = new URL(ADMIN).hostname;
     const answers = item.locator('.bgq-answer-row input[type=text]');
     await answers.nth(0).fill('Right'); await answers.nth(1).fill('Wrong');
   }
-  // Two results with ranges.
-  const resSection = page.locator('.bgq-section[data-section=results]');
-  for (let i = 0; i < 2; i++) { await page.locator('[data-action=add-result]').click(); }
-  const results = resSection.locator('.bgq-item');
-  await results.nth(0).locator('input.large-text').first().fill('Top');
-  await results.nth(0).locator('.bgq-range input').nth(0).fill('50'); await results.nth(0).locator('.bgq-range input').nth(1).fill('100');
-  await results.nth(1).locator('input.large-text').first().fill('Low');
-  await results.nth(1).locator('.bgq-range input').nth(0).fill('0'); await results.nth(1).locator('.bgq-range input').nth(1).fill('49');
   await page.selectOption('.bgq-header select', 'publish');
   await page.click('.bgq-save');
   await page.waitForSelector('#bgq-save-status.is-ok, #bgq-save-status.is-error', { timeout: 15000 });
@@ -46,10 +49,13 @@ const HOST = new URL(ADMIN).hostname;
   await page.goto(ADMIN + 'post.php?post=' + savedId + '&action=edit', { waitUntil: 'networkidle' });
   await page.waitForSelector('#bgq-builder .bgq-header', { timeout: 30000 });
   log((await page.locator('.bgq-title-input').inputValue()) === 'E2E built quiz', 'title persisted after reload');
+  await page.locator('.bgq-steps .bgq-step').nth(2).click();
   log(await page.locator('.bgq-section[data-section=questions]').locator('.bgq-item').count() === 2, 'questions persisted');
+  await page.locator('.bgq-steps .bgq-step').nth(1).click();
   log((await page.locator('.bgq-section[data-section=results]').locator('.bgq-item').first().locator('input.large-text').first().inputValue()) === 'Top', 'result persisted');
   log((await page.locator('.bgq-header select').inputValue()) === 'publish', 'status persisted');
   // Validation: clear a question text and save → error shown, not persisted.
+  await page.locator('.bgq-steps .bgq-step').nth(2).click();
   await page.locator('.bgq-section[data-section=questions]').locator('.bgq-item').first().locator('.bgq-field input.large-text').first().fill('');
   await page.click('.bgq-save');
   await page.waitForSelector('#bgq-save-status.is-ok, #bgq-save-status.is-error', { timeout: 15000 });

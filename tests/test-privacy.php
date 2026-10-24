@@ -28,4 +28,7 @@ bgq_assert_eq( 1, Attempts::count( [ 'quiz_id' => $quiz ] ), 'other attempt unto
 do_action( 'admin_init' );
 global $wp_registered_settings;
 bgq_assert( isset( $wp_registered_settings['bgq_options'] ), 'bgq_options registered as a setting' );
-bgq_assert_eq( [ 'cleanup_on_uninstall' => '1' ], \Bgq\Support\Options::sanitize( [ 'cleanup_on_uninstall' => 'on', 'junk' => 'x' ] ), 'sanitize keeps only known keys' );
+$sanitized = \Bgq\Support\Options::sanitize( [ 'cleanup_on_uninstall' => 'on', 'junk' => 'x' ] );
+bgq_assert_eq( array_keys( \Bgq\Support\Options::defaults() ), array_keys( $sanitized ), 'sanitize returns every known key' );
+bgq_assert_eq( '1', $sanitized['cleanup_on_uninstall'], 'sanitize enables cleanup' );
+bgq_assert( ! isset( $sanitized['junk'] ), 'sanitize drops unknown keys' );

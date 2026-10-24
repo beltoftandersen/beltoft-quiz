@@ -49,9 +49,49 @@
 		this.cfg = data.config;
 		this.i18n = data.i18n;
 		this.labels = this.cfg.settings.labels;
+		this.hashPrefix = '#quiz-' + data.id + '-';
+		this.done = false;
 		this.reset();
+		var self = this;
+		window.addEventListener('popstate', function (e) { self.onHistory(e.state); });
+		// Back from a recommended product: the result entry of the history is open again, so show the result again.
+		var saved = this.loadResult();
+		if (saved && window.location.hash === this.hashPrefix + 'result') { this.done = true; this.renderResult(saved, true); return; }
 		this.renderStart();
 	}
+
+	/* ---- History: every step is an entry, so the browser's back and forward buttons move through the quiz until it is done. */
+	Quiz.prototype.storageKey = function () { return 'bgq_result_' + this.data.id; };
+	Quiz.prototype.saveResult = function (res) {
+		try { window.sessionStorage.setItem(this.storageKey(), JSON.stringify({ time: Date.now(), res: res })); } catch (e) {}
+	};
+	Quiz.prototype.loadResult = function () {
+		try {
+			var v = JSON.parse(window.sessionStorage.getItem(this.storageKey()) || 'null');
+			return v && v.res && Date.now() - v.time < 6 * 3600 * 1000 ? v.res : null;
+		} catch (e) { return null; }
+	};
+	Quiz.prototype.clearResult = function () { try { window.sessionStorage.removeItem(this.storageKey()); } catch (e) {} };
+	Quiz.prototype.pushStep = function (step) {
+		if (!window.history || !window.history.pushState) { return; }
+		var state = { bgq: this.data.id, step: step };
+		var url = this.hashPrefix + (typeof step === 'number' ? (step + 1) : step);
+		if (window.history.state && window.history.state.bgq === this.data.id && window.history.state.step === step) { window.history.replaceState(state, '', url); return; }
+		window.history.pushState(state, '', url);
+	};
+	Quiz.prototype.onHistory = function (state) {
+		var mine = state && state.bgq === this.data.id;
+		if (this.done) {
+			// Done: the question entries are behind us. Skip back over them to the page itself, keeping the result on screen.
+			if (mine && typeof state.step === 'number') { window.history.go(-(state.step + 1)); return; }
+			if (mine && state.step === 'details') { window.history.go(-(this.questions.length + 1)); return; }
+			return;
+		}
+		if (!this.token) { return; }
+		if (!mine) { this.stopTimer(); this.reset(); this.renderStart(); return; } // back to before Start
+		if (typeof state.step === 'number' && state.step >= 0 && state.step < this.questions.length) { this.index = state.step; this.renderQuestion(true); return; }
+		if (state.step === 'details') { this.renderEmail(null, true); }
+	};
 
 	Quiz.prototype.reset = function () {
 		this.token = null;
@@ -95,6 +135,7 @@
 				self.reshuffle();
 				self.startedAt = Date.now();
 				if (self.cfg.settings.timer > 0) { self.startTimer(); }
+				self.index = 0;
 				self.renderQuestion();
 			})
 			.catch(function () { self.renderError(self.i18n.error, true); });
@@ -150,8 +191,9 @@
 		]);
 	};
 
-	Quiz.prototype.renderQuestion = function () {
+	Quiz.prototype.renderQuestion = function (fromHistory) {
 		var self = this, q = this.questions[this.index], total = this.questions.length;
+		if (!fromHistory) { this.pushStep(this.index); }
 		var chosen = this.answers[q.id] || [];
 		var multiple = q.type === 'multiple';
 		var list = el('div', { class: 'bgq-answers', role: multiple ? 'group' : 'radiogroup', 'aria-labelledby': 'bgq-q-' + q.id });
@@ -168,7 +210,10 @@
 
 		var error = el('p', { class: 'bgq-error', role: 'alert', hidden: true });
 		var nav = el('div', { class: 'bgq-nav' }, [
-			this.index > 0 ? el('button', { type: 'button', class: 'bgq-btn bgq-btn--ghost', text: this.labels.back, onclick: function () { self.index -= 1; self.renderQuestion(); } }) : null,
+			this.index > 0 ? el('button', { type: 'button', class: 'bgq-btn bgq-btn--ghost', text: this.labels.back, onclick: function () {
+				if (window.history.state && window.history.state.bgq === self.data.id) { window.history.back(); return; } // same as the browser's back
+				self.index -= 1; self.renderQuestion();
+			} }) : null,
 			el('button', { type: 'button', class: 'bgq-btn bgq-btn--primary', text: this.index === total - 1 ? this.labels.submit : this.labels.next, onclick: function () {
 				if (!(self.answers[q.id] || []).length) { error.textContent = self.i18n.select_answer; error.hidden = false; return; }
 				self.next();
@@ -216,23 +261,26 @@
 		this.submit({});
 	};
 
-	Quiz.prototype.renderEmail = function (notice) {
+	Quiz.prototype.renderEmail = function (notice, fromHistory) {
 		var self = this, s = this.cfg.settings;
+		if (!fromHistory) { this.pushStep('details'); }
 		var name = el('input', { type: 'text', class: 'bgq-input', id: 'bgq-name-' + this.data.id, autocomplete: 'name' });
 		var email = el('input', { type: 'email', class: 'bgq-input', id: 'bgq-email-' + this.data.id, autocomplete: 'email', required: true });
 		var consent = s.consent_text ? el('input', { type: 'checkbox', id: 'bgq-consent-' + this.data.id }) : null;
+		var newsletter = this.data.newsletter ? el('input', { type: 'checkbox', id: 'bgq-newsletter-' + this.data.id }) : null;
 		var error = el('p', { class: 'bgq-error', role: 'alert', hidden: true });
 		var form = el('form', { class: 'bgq-form', novalidate: true, onsubmit: function (e) {
 			e.preventDefault();
 			var value = email.value.trim();
 			if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) { error.textContent = self.i18n.email_invalid; error.hidden = false; email.focus(); return; }
 			if (consent && !consent.checked) { error.textContent = self.i18n.consent_req; error.hidden = false; consent.focus(); return; }
-			self.submit({ email: value, name: name.value.trim(), consent: consent ? consent.checked : false });
+			self.submit({ email: value, name: name.value.trim(), consent: consent ? consent.checked : false, newsletter: newsletter ? newsletter.checked : false });
 		} }, [
 			notice ? el('p', { class: 'bgq-meta', text: notice }) : null,
 			el('label', { class: 'bgq-label', for: name.id, text: this.i18n.name }), name,
 			el('label', { class: 'bgq-label', for: email.id, text: this.i18n.email }), email,
 			consent ? el('label', { class: 'bgq-consent', for: consent.id }, [consent, el('span', { html: s.consent_text })]) : null,
+			newsletter ? el('label', { class: 'bgq-consent bgq-newsletter', for: newsletter.id }, [newsletter, el('span', { text: this.data.newsletter })]) : null,
 			error,
 			el('div', { class: 'bgq-nav' }, [el('button', { type: 'submit', class: 'bgq-btn bgq-btn--primary', text: this.labels.submit })])
 		]);
@@ -252,6 +300,9 @@
 			.then(function (r) { return r.json().then(function (json) { return { ok: r.ok, status: r.status, json: json }; }); })
 			.then(function (res) {
 				if (!res.ok) { self.renderError(res.json && res.json.message ? res.json.message : self.i18n.error, res.status === 403 || res.status === 410); return; }
+				self.done = true;
+				self.saveResult(res.json);
+				self.pushStep('result');
 				self.renderResult(res.json);
 			})
 			.catch(function () { self.renderError(self.i18n.error); });
@@ -279,19 +330,23 @@
 		parts.push(el('h2', { class: 'bgq-result__title', text: r.title || '', 'data-bgq-focus': true }));
 		if (r.image) { parts.push(el('img', { class: 'bgq-result__image', src: r.image, alt: '' })); }
 		if (r.text) { parts.push(el('div', { class: 'bgq-result__text', html: r.text })); }
-		if (r.product) {
-			var p = r.product;
-			parts.push(el('div', { class: 'bgq-product' }, [
-				p.image ? el('img', { class: 'bgq-product__image', src: p.image, alt: '' }) : null,
-				el('div', { class: 'bgq-product__body' }, [
-					el('h3', { class: 'bgq-product__name', text: p.name }),
-					el('div', { class: 'bgq-product__price', html: p.price_html }),
-					el('div', { class: 'bgq-product__actions' }, [
-						p.add_to_cart_url ? el('a', { class: 'bgq-btn bgq-btn--primary', href: p.add_to_cart_url, text: this.i18n.add_to_cart }) : null,
-						el('a', { class: 'bgq-btn bgq-btn--ghost', href: p.url, text: this.i18n.view_product })
+		var products = r.products || (r.product ? [r.product] : []);
+		if (products.length) {
+			var card = function (p) {
+				return el('div', { class: 'bgq-product' }, [
+					p.image ? el('img', { class: 'bgq-product__image', src: p.image, alt: '' }) : null,
+					el('div', { class: 'bgq-product__body' }, [
+						el('h3', { class: 'bgq-product__name', text: p.name }),
+						p.reason ? el('p', { class: 'bgq-product__reason', text: sprintf(self.i18n.recommended_because, p.reason) }) : null,
+						el('div', { class: 'bgq-product__price', html: p.price_html }),
+						el('div', { class: 'bgq-product__actions' }, [
+							p.add_to_cart_url ? el('a', { class: 'bgq-btn bgq-btn--primary bgq-add add_to_cart_button product_type_simple' + (self.bricksCart() ? ' brx_ajax_add_to_cart' : ''), href: p.add_to_cart_url, rel: 'nofollow', 'data-product_id': p.id, 'data-quantity': '1', 'data-product_type': 'simple', text: self.i18n.add_to_cart }) : null,
+							el('a', { class: 'bgq-btn bgq-btn--ghost', href: p.url, text: self.i18n.view_product })
+						])
 					])
-				])
-			]));
+				]);
+			};
+			parts.push(products.length === 1 ? card(products[0]) : el('div', { class: 'bgq-products' }, products.map(card)));
 		}
 		if (res.reward && res.reward.code) {
 			parts.push(el('div', { class: 'bgq-reward' }, [
@@ -302,9 +357,23 @@
 		}
 		var actions = [];
 		if (r.button_url && r.button_label) { actions.push(el('a', { class: 'bgq-btn bgq-btn--primary', href: r.button_url, text: r.button_label })); }
-		if (!this.cfg.settings.one_attempt) { actions.push(el('button', { type: 'button', class: 'bgq-btn bgq-btn--ghost', text: this.labels.retry, onclick: function () { window.location.reload(); } })); }
+		if (!this.cfg.settings.one_attempt) { actions.push(el('button', { type: 'button', class: 'bgq-btn bgq-btn--ghost', text: this.labels.retry, onclick: function () {
+			self.clearResult();
+			window.location.href = window.location.pathname + window.location.search; // a fresh start, without the step in the address
+		} })); }
 		if (actions.length) { parts.push(el('div', { class: 'bgq-nav' }, actions)); }
 		this.mount(el('div', { class: 'bgq-screen bgq-result', 'aria-live': 'polite' }, parts));
+		this.bindCart();
+	};
+
+	// Add to cart the way the shop's buttons do it: Bricks' own AJAX add to cart (brx_ajax_add_to_cart, its "Adding…"/added
+	// texts, the cart fragments and the site's cart pop-up). Without Bricks or with its AJAX off, the link adds and reloads.
+	Quiz.prototype.bricksCart = function () {
+		return !!(window.bricksWooCommerce && window.bricksWooCommerce.ajaxAddToCartEnabled);
+	};
+	Quiz.prototype.bindCart = function () {
+		/* global bricksWooAjaxAddToCartFn */
+		if (this.bricksCart() && typeof bricksWooAjaxAddToCartFn !== 'undefined' && bricksWooAjaxAddToCartFn.run) { bricksWooAjaxAddToCartFn.run(); }
 	};
 
 	document.querySelectorAll('.bgq[data-quiz]').forEach(function (root) {

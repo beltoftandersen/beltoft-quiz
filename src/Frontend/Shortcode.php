@@ -67,6 +67,7 @@ class Shortcode {
 			'config'   => Config::public_view( $config ),
 			'token_url' => esc_url_raw( rest_url( 'bgq/v1/quizzes/' . $quiz_id . '/token' ) ),
 			'rest_url'  => esc_url_raw( rest_url( 'bgq/v1/attempts' ) ),
+			'newsletter' => \Bgq\Integrations\Newsletter::label_for( $config ),
 			'i18n'     => [
 				/* translators: 1: current question number, 2: total questions */
 				'question_of'   => __( 'Question %1$s of %2$s', 'beltoft-quiz' ),
@@ -92,6 +93,8 @@ class Shortcode {
 				'reward_sent'   => __( 'We have also emailed it to you.', 'beltoft-quiz' ),
 				'add_to_cart'   => __( 'Add to cart', 'beltoft-quiz' ),
 				'view_product'  => __( 'View product', 'beltoft-quiz' ),
+				/* translators: %s: comma-separated selected answers. */
+				'recommended_because' => __( 'Recommended because: %s', 'beltoft-quiz' ),
 				'times_up'      => __( 'Time is up, sending your answers…', 'beltoft-quiz' ),
 			],
 		];

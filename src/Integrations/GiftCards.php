@@ -72,6 +72,22 @@ class GiftCards {
 			return [ 'code' => $previous->code, 'amount' => (float) $previous->initial_amount ];
 		}
 
+		// The unique reward claim closes the gap between the lookup above and card
+		// creation. Only its owning attempt may mint a card for this quiz/email.
+		$owner_id = Attempts::claim_reward( (int) $attempt_id, (int) $attempt->quiz_id, $email );
+		if ( $owner_id !== (int) $attempt_id ) {
+			$owner = $owner_id ? Attempts::get( $owner_id ) : null;
+			if ( $owner && ! empty( $owner->gift_card_id ) ) {
+				$existing = \Bgcw\GiftCard\Repository::find( (int) $owner->gift_card_id );
+				if ( $existing ) {
+					Attempts::update( (int) $attempt_id, [ 'gift_card_id' => (int) $existing->id ] );
+					return [ 'code' => $existing->code, 'amount' => (float) $existing->initial_amount ];
+				}
+			}
+			// Another request owns the claim and is still creating the card.
+			return null;
+		}
+
 		$expiry = (int) ( $rw['expiry_days'] ?? 0 );
 		$args   = [
 			'amount'          => (float) $rw['amount'],
@@ -87,10 +103,12 @@ class GiftCards {
 		try {
 			$card_id = \Bgcw\GiftCard\GiftCardCreator::create_manual( $args );
 		} catch ( \Throwable $e ) {
+			Attempts::release_reward_claim( (int) $attempt_id );
 			self::log( 'Gift card reward failed for attempt ' . (int) $attempt_id . ': ' . $e->getMessage() );
 			return null;
 		}
 		if ( ! $card_id ) {
+			Attempts::release_reward_claim( (int) $attempt_id );
 			self::log( 'Gift card reward failed for attempt ' . (int) $attempt_id . '.' );
 			return null;
 		}

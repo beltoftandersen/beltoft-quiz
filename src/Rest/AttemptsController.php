@@ -33,7 +33,8 @@ class AttemptsController {
 					'answers' => [ 'type' => 'object', 'default' => [] ],
 					'email'   => [ 'type' => 'string', 'default' => '' ],
 					'name'    => [ 'type' => 'string', 'default' => '' ],
-					'consent' => [ 'type' => 'boolean', 'default' => false ],
+					'consent'    => [ 'type' => 'boolean', 'default' => false ],
+					'newsletter' => [ 'type' => 'boolean', 'default' => false ],
 				],
 			]
 		);
@@ -89,6 +90,12 @@ class AttemptsController {
 			return new \WP_Error( 'bgq_bad_token', __( 'This quiz session is not valid. Please reload the page.', 'beltoft-quiz' ), [ 'status' => 403 ] );
 		}
 
+		$timed_out = $timer > 0 && time() - (int) ( $token['started_at'] ?? 0 ) >= $timer;
+		$answers   = self::clean_answers( $config, (array) $request['answers'], $timed_out );
+		if ( is_wp_error( $answers ) ) {
+			return $answers;
+		}
+
 		$ip_hash = Attempts::ip_hash( Attempts::client_ip() );
 		$rl_key  = 'bgq_rl_' . $ip_hash;
 		$count   = (int) get_transient( $rl_key );
@@ -98,7 +105,7 @@ class AttemptsController {
 		set_transient( $rl_key, $count + 1, self::RATE_WINDOW );
 
 		// Duplicate submit of the same session by the same visitor (double click): return the stored attempt.
-		$dup_key = 'bgq_dup_' . md5( $quiz_id . '|' . (string) $token['hash'] . '|' . $ip_hash . '|' . wp_json_encode( $request['answers'] ) );
+		$dup_key = 'bgq_dup_' . md5( $quiz_id . '|' . (string) $token['hash'] . '|' . $ip_hash . '|' . wp_json_encode( $answers ) );
 		$dup_id  = (int) get_transient( $dup_key );
 		if ( $dup_id && ( $dup = Attempts::get( $dup_id ) ) ) {
 			return rest_ensure_response( self::response( $config, $dup, true ) );
@@ -128,7 +135,6 @@ class AttemptsController {
 			}
 		}
 
-		$answers = self::clean_answers( $config, (array) $request['answers'] );
 		$grade   = Grader::grade( $config, $answers );
 
 		$attempt_id = Attempts::insert(
@@ -142,6 +148,12 @@ class AttemptsController {
 				'total_count'      => $grade['total_count'],
 				'result_id'        => $grade['result_id'],
 				'answers'          => wp_json_encode( $answers ),
+				'recommendations'  => wp_json_encode(
+					[
+						'ids'     => array_map( 'intval', (array) $grade['product_ids'] ),
+						'reasons' => (array) $grade['product_reasons'],
+					]
+				),
 				'ip_hash'          => $ip_hash,
 				'duration_seconds' => max( 0, time() - (int) $token['started_at'] ),
 			]
@@ -152,6 +164,16 @@ class AttemptsController {
 		set_transient( $dup_key, $attempt_id, MINUTE_IN_SECONDS );
 
 		$attempt = Attempts::get( $attempt_id );
+
+		/**
+		 * Fires once a new attempt is stored (not for duplicates or repeat visits).
+		 *
+		 * @param int              $attempt_id Attempt row ID.
+		 * @param array            $config     Quiz config.
+		 * @param object           $attempt    Attempt row.
+		 * @param \WP_REST_Request $request    Submit request.
+		 */
+		do_action( 'bgq_attempt_created', $attempt_id, $config, $attempt, $request );
 
 		/**
 		 * Filter the reward for a completed attempt. Return [ 'code' => ..., 'amount' => ... ] or null.
@@ -167,14 +189,29 @@ class AttemptsController {
 	}
 
 	/**
-	 * Keep only known question ids with arrays of strings.
+	 * Validate a complete submission and return canonical answer arrays.
+	 *
+	 * @return array|\WP_Error
 	 */
-	private static function clean_answers( array $config, array $raw ): array {
+	private static function clean_answers( array $config, array $raw, bool $allow_incomplete = false ) {
 		$clean = [];
-		foreach ( $config['questions'] as $q ) {
-			if ( isset( $raw[ $q['id'] ] ) ) {
-				$clean[ $q['id'] ] = array_values( array_map( 'sanitize_key', (array) $raw[ $q['id'] ] ) );
+		$known_questions = array_column( $config['questions'], 'id' );
+		foreach ( array_keys( $raw ) as $question_id ) {
+			if ( ! in_array( (string) $question_id, $known_questions, true ) ) {
+				return new \WP_Error( 'bgq_invalid_answers', __( 'Please answer every question using one of the available choices.', 'beltoft-quiz' ), [ 'status' => 400 ] );
 			}
+		}
+		foreach ( $config['questions'] as $q ) {
+			$submitted = isset( $raw[ $q['id'] ] ) ? array_values( array_map( 'sanitize_key', (array) $raw[ $q['id'] ] ) ) : [];
+			$submitted = array_values( array_unique( array_filter( $submitted, 'strlen' ) ) );
+			$known     = array_column( $q['answers'], 'id' );
+			if ( ! $submitted && $allow_incomplete ) {
+				continue;
+			}
+			if ( ! $submitted || array_diff( $submitted, $known ) || ( 'single' === $q['type'] && 1 !== count( $submitted ) ) ) {
+				return new \WP_Error( 'bgq_invalid_answers', __( 'Please answer every question using one of the available choices.', 'beltoft-quiz' ), [ 'status' => 400 ] );
+			}
+			$clean[ $q['id'] ] = $submitted;
 		}
 		return $clean;
 	}
@@ -198,6 +235,28 @@ class AttemptsController {
 		 * @param array|null $result Result config.
 		 */
 		$rendered = apply_filters( 'bgq_render_result', $result ? [ 'id' => $result['id'], 'title' => $result['title'], 'text' => $result['text'] ?? '' ] : null, $config, $result );
+		if ( is_array( $rendered ) && $result && array_key_exists( 'products', $rendered ) ) {
+			// New attempts carry an immutable recommendation snapshot. Older rows
+			// fall back to recomputing from their saved answers.
+			$snapshot = json_decode( (string) ( $attempt->recommendations ?? '' ), true );
+			if ( is_array( $snapshot ) && array_key_exists( 'ids', $snapshot ) ) {
+				$details = [
+					'ids'     => array_map( 'intval', (array) $snapshot['ids'] ),
+					'reasons' => is_array( $snapshot['reasons'] ?? null ) ? $snapshot['reasons'] : [],
+				];
+			} else {
+				$stored  = json_decode( (string) ( $attempt->answers ?? '' ), true );
+				$details = \Bgq\Quiz\Grader::recommendation_details( $config, is_array( $stored ) ? $stored : [], (string) $result['id'] );
+			}
+			$ids      = $details['ids'];
+			$products = array_values( array_filter( array_map( [ \Bgq\Frontend\Results::class, 'product' ], $ids ) ) );
+			foreach ( $products as &$product ) {
+				$product['reason'] = implode( ', ', (array) ( $details['reasons'][ $product['id'] ] ?? [] ) );
+			}
+			unset( $product );
+			$rendered['products'] = $products;
+			$rendered['product']  = $products ? $products[0] : null;
+		}
 
 		$passed = 'score' === $config['mode'] ? ( (float) $attempt->score >= (float) $config['settings']['pass_mark'] ) : null;
 

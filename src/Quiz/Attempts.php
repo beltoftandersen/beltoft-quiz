@@ -28,13 +28,14 @@ class Attempts {
 			'total_count'      => (int) ( $row['total_count'] ?? 0 ),
 			'result_id'        => (string) ( $row['result_id'] ?? '' ),
 			'answers'          => is_string( $row['answers'] ?? null ) ? $row['answers'] : wp_json_encode( $row['answers'] ?? [] ),
+			'recommendations'  => is_string( $row['recommendations'] ?? null ) ? $row['recommendations'] : wp_json_encode( $row['recommendations'] ?? [] ),
 			'ip_hash'          => (string) ( $row['ip_hash'] ?? '' ),
 			'duration_seconds' => (int) ( $row['duration_seconds'] ?? 0 ),
 			'created_at'       => current_time( 'mysql', true ),
 		];
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Custom table.
-		$ok = $wpdb->insert( $wpdb->prefix . 'bgq_attempts', $data, [ '%d', '%d', '%s', '%s', '%f', '%d', '%d', '%s', '%s', '%s', '%d', '%s' ] );
+		$ok = $wpdb->insert( $wpdb->prefix . 'bgq_attempts', $data, [ '%d', '%d', '%s', '%s', '%f', '%d', '%d', '%s', '%s', '%s', '%s', '%d', '%s' ] );
 
 		return $ok ? (int) $wpdb->insert_id : 0;
 	}
@@ -116,6 +117,35 @@ class Attempts {
 		global $wpdb;
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table.
 		return false !== $wpdb->update( $wpdb->prefix . 'bgq_attempts', $fields, [ 'id' => $id ] );
+	}
+
+	/**
+	 * Atomically reserve the one reward allowed for an email and quiz.
+	 *
+	 * The unique reward_key index is the concurrency boundary. The returned ID
+	 * is the attempt that owns the reservation, which can differ from $id.
+	 */
+	public static function claim_reward( int $id, int $quiz_id, string $email ): int {
+		global $wpdb;
+		$key   = hash( 'sha256', $quiz_id . '|' . strtolower( trim( $email ) ) );
+		$table = $wpdb->prefix . 'bgq_attempts';
+
+		$previous_suppression = $wpdb->suppress_errors( true );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Atomic update on the custom table; the unique index arbitrates concurrent requests.
+		$wpdb->query( $wpdb->prepare( "UPDATE {$table} SET reward_key = %s WHERE id = %d AND reward_key IS NULL", $key, $id ) );
+		$wpdb->suppress_errors( $previous_suppression );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table lookup.
+		return (int) $wpdb->get_var( $wpdb->prepare( "SELECT id FROM {$table} WHERE reward_key = %s LIMIT 1", $key ) );
+	}
+
+	/**
+	 * Release a failed reward reservation so the attempt can be retried.
+	 */
+	public static function release_reward_claim( int $id ): void {
+		global $wpdb;
+		$table = $wpdb->prefix . 'bgq_attempts';
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Custom table.
+		$wpdb->query( $wpdb->prepare( "UPDATE {$table} SET reward_key = NULL WHERE id = %d AND gift_card_id IS NULL", $id ) );
 	}
 
 	/**

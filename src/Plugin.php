@@ -11,6 +11,7 @@ use Bgq\Admin\EntriesPage;
 use Bgq\Admin\Export;
 use Bgq\Admin\Analytics;
 use Bgq\Integrations\GiftCards;
+use Bgq\Integrations\Newsletter;
 use Bgq\Support\Privacy;
 use Bgq\Admin\SettingsPage;
 use Bgq\Frontend\Shortcode;
@@ -33,6 +34,7 @@ class Plugin {
 		Export::init();
 		Analytics::init();
 		GiftCards::init();
+		Newsletter::init();
 		Privacy::init();
 		SettingsPage::init();
 		Results::init();

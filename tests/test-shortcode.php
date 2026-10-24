@@ -43,13 +43,18 @@ bgq_assert_eq( 'https://example.test/shop', $r['button_url'], 'button url' );
 bgq_assert_eq( null, $r['product'], 'no product' );
 
 if ( function_exists( 'wc_get_product' ) ) {
-	$pid = wc_get_products( [ 'type' => 'simple', 'limit' => 1, 'status' => 'publish', 'return' => 'ids' ] );
-	if ( $pid ) {
-		$cfg['results'][0]['product_id'] = (int) $pid[0];
-		$r = Results::render( $cfg, 'hi' );
-		bgq_assert( is_array( $r['product'] ) && '?add-to-cart=' . $pid[0] === substr( $r['product']['add_to_cart_url'], -strlen( '?add-to-cart=' . $pid[0] ) ), 'product result has add-to-cart url' );
-		bgq_assert( '' !== $r['product']['name'] && '' !== $r['product']['price_html'], 'product name and price' );
-	}
+	$product = new WC_Product_Simple();
+	$product->set_name( 'Quiz test product' );
+	$product->set_regular_price( '9.95' );
+	$product->set_status( 'publish' );
+	$product->set_catalog_visibility( 'visible' );
+	$pid = $product->save();
+	bgq_test_register_cleanup( function () use ( $pid ) { wp_delete_post( $pid, true ); } );
+	$cfg['results'][0]['product_id']  = $pid;
+	$cfg['results'][0]['product_ids'] = [ $pid ];
+	$r = Results::render( $cfg, 'hi' );
+	bgq_assert( is_array( $r['product'] ) && '?add-to-cart=' . $pid === substr( $r['product']['add_to_cart_url'], -strlen( '?add-to-cart=' . $pid ) ), 'product result has add-to-cart url' );
+	bgq_assert( '' !== $r['product']['name'] && '' !== $r['product']['price_html'], 'product name and price' );
 }
 
 // The REST response uses Results::render through the filter.

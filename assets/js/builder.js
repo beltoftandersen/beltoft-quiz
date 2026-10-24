@@ -11,6 +11,9 @@
 	var state = B.config;
 	var errors = {};
 	var dirty = false;
+	var currentStep = 0;
+	var previewAnswers = {};
+	var productNameCache = {};
 
 	function uid(prefix) { return prefix + '_' + Math.random().toString(36).slice(2, 8); }
 	function el(tag, attrs, children) {
@@ -37,19 +40,23 @@
 		return wrap;
 	}
 	function input(type, value, onchange, extra) {
-		var attrs = Object.assign({ type: type, id: uid('f'), class: type === 'checkbox' ? '' : 'regular-text' }, extra || {});
+		var checkable = type === 'checkbox' || type === 'radio';
+		var options = Object.assign({}, extra || {});
+		var noDirty = !!options.noDirty;
+		delete options.noDirty;
+		var attrs = Object.assign({ type: type, id: uid('f'), class: checkable ? '' : 'regular-text' }, options);
 		var node = el('input', attrs);
-		if (type === 'checkbox') { node.checked = !!value; } else { node.value = value === undefined || value === null ? '' : value; }
-		node.addEventListener(type === 'checkbox' || type === 'color' ? 'change' : 'input', function () {
-			onchange(type === 'checkbox' ? node.checked : (type === 'number' ? Number(node.value) : node.value));
-			markDirty();
+		if (checkable) { node.checked = !!value; } else { node.value = value === undefined || value === null ? '' : value; }
+		node.addEventListener(checkable || type === 'color' ? 'change' : 'input', function () {
+			onchange(checkable ? node.checked : (type === 'number' ? Number(node.value) : node.value));
+			if (!noDirty) { markDirty(); }
 		});
 		return node;
 	}
-	function select(options, value, onchange) {
+	function select(options, value, onchange, noDirty) {
 		var node = el('select', { id: uid('s') });
 		Object.keys(options).forEach(function (k) { node.appendChild(el('option', { value: k, text: options[k], selected: k === value })); });
-		node.addEventListener('change', function () { onchange(node.value); markDirty(); });
+		node.addEventListener('change', function () { onchange(node.value); if (!noDirty) { markDirty(); } });
 		return node;
 	}
 	function textarea(value, onchange, rows) {
@@ -113,13 +120,44 @@
 
 	function sectionSettings() {
 		var s = state.settings;
+		var modes = { score: t.mode_score, outcome: t.mode_outcome };
+		if (B.woocommerce_active) { modes.product = t.mode_product; }
 		var body = [
-			field(t.mode, select({ score: t.mode_score, outcome: t.mode_outcome }, state.mode, function (v) { state.mode = v; render(); }), 'mode')
+			field(t.mode, select(modes, state.mode, function (v) {
+				state.mode = v;
+				if (v === 'product') {
+					s.product_recommendation = 'product_rules';
+					if (!state.results.length) { state.results.push(newResult()); }
+					state.questions.forEach(function (question) {
+						question.answers.forEach(function (answer) {
+							answer.effects = answer.effects || [];
+							if (!answer.effects.length && (answer.products || []).length) {
+								answer.effects = answer.products.map(function (productId) { return { target: 'product', product_id: productId, action: 'boost', weight: 1 }; });
+							}
+						});
+					});
+				} else if (s.product_recommendation === 'product_rules') { s.product_recommendation = 'result_products'; }
+				render();
+			}), 'mode')
 		];
 		if (state.mode === 'score') {
 			body.push(field(t.pass_mark, input('number', s.pass_mark, function (v) { s.pass_mark = v; }, { min: 0, max: 100 }), 'settings.pass_mark'));
 		}
 		body.push(field(t.timer, input('number', s.timer, function (v) { s.timer = v; }, { min: 0 }), 'settings.timer'));
+		if (B.woocommerce_active && state.mode !== 'product') {
+			s.product_recommendation = s.product_recommendation || 'result_products';
+			body.push(field(t.recommendation_method, select({ result_products: t.recommend_by_result, answer_matches: t.recommend_by_answer }, s.product_recommendation, function (v) { s.product_recommendation = v; render(); }), 'settings.product_recommendation'));
+			body.push(el('div', { class: 'bgq-logic-note' }, [
+				el('strong', { text: state.mode === 'score' ? t.mode_score : t.mode_outcome }),
+				el('p', { text: state.mode === 'score' ? t.mode_score_help : t.mode_outcome_help }),
+				el('p', { text: s.product_recommendation === 'answer_matches' ? t.recommend_by_answer_help : t.recommend_by_result_help })
+			]));
+			body.push(field(t.max_products, input('number', s.max_products || 3, function (v) { s.max_products = v; }, { min: 1, max: B.max_products }), 'settings.max_products'));
+		}
+		if (B.woocommerce_active && state.mode === 'product') {
+			body.push(el('div', { class: 'bgq-logic-note' }, [el('strong', { text: t.mode_product }), el('p', { text: t.mode_product_help })]));
+			body.push(field(t.max_products, input('number', s.max_products || 3, function (v) { s.max_products = v; }, { min: 1, max: B.max_products }), 'settings.max_products'));
+		}
 		body.push(checkbox(t.shuffle_q, s.shuffle_questions, function (v) { s.shuffle_questions = v; }));
 		body.push(checkbox(t.shuffle_a, s.shuffle_answers, function (v) { s.shuffle_answers = v; }));
 		body.push(checkbox(t.one_attempt, s.one_attempt, function (v) { s.one_attempt = v; }));
@@ -143,6 +181,11 @@
 
 	function sectionQuestions() {
 		var list = el('div', { class: 'bgq-items' });
+		var questionsHelp = state.mode === 'score' ? t.questions_help_score : (state.mode === 'product' ? t.questions_help_product : t.questions_help_outcome);
+		list.appendChild(el('p', { class: 'description bgq-section-intro', text: questionsHelp }));
+		if (state.mode === 'outcome' && state.results.length === 1) {
+			list.appendChild(el('div', { class: 'bgq-logic-note' }, [el('p', { text: t.single_outcome_help.replace('%s', state.results[0].title || t.result_title) })]));
+		}
 		state.questions.forEach(function (q, qi) {
 			var path = 'questions.' + qi;
 			var card = el('div', { class: 'bgq-item' + (errors[path + '.text'] || errors[path + '.answers'] ? ' has-error' : '') });
@@ -166,7 +209,7 @@
 				if (state.mode === 'score') {
 					var c = input('checkbox', a.correct, function (v) { a.correct = v; });
 					row.appendChild(el('label', { class: 'bgq-inline', for: c.id }, [c, ' ' + t.correct]));
-				} else {
+				} else if (state.mode === 'outcome' && state.results.length > 1) {
 					a.points = a.points || {};
 					state.results.forEach(function (r) {
 						var p = input('number', a.points[r.id] || 0, function (v) { if (v > 0) { a.points[r.id] = v; } else { delete a.points[r.id]; } }, { min: 0, class: 'small-text', title: t.points_for + ' ' + r.title });
@@ -175,15 +218,29 @@
 				}
 				row.appendChild(el('button', { type: 'button', class: 'button-link bgq-remove', text: t.remove, onclick: act('add-answer-' + q.id, function () { q.answers.splice(ai, 1); markDirty(); render(); }) }));
 				answers.appendChild(row);
+				if (state.mode === 'product') {
+					a.effects = a.effects || [];
+					answers.appendChild(productEffectEditor(a));
+				} else if (B.woocommerce_active && state.settings.product_recommendation === 'answer_matches') {
+					a.products = a.products || [];
+					var productSummary = el('summary');
+					var updateProductSummary = function () { productSummary.textContent = t.answer_products + ' — ' + t.mapped_products.replace('%d', a.products.length); };
+					updateProductSummary();
+					answers.appendChild(el('details', { class: 'bgq-answer-products' }, [
+						productSummary,
+						el('p', { class: 'description', text: t.answer_products_help }),
+						productsPicker(function () { return a.products; }, function (ids) { a.products = ids; updateProductSummary(); })
+					]));
+				}
 			});
 			var answersField = el('div', { class: 'bgq-field' + (errors[path + '.answers'] ? ' has-error' : '') }, [el('label', { text: t.answers }), answers]);
 			if (errors[path + '.answers']) { answersField.appendChild(el('p', { class: 'bgq-field__error', text: errors[path + '.answers'] })); }
-			answersField.appendChild(el('button', { type: 'button', class: 'button', 'data-action': 'add-answer', 'data-focus': 'add-answer-' + q.id, text: t.add_answer, onclick: act('add-answer-' + q.id, function () { q.answers.push({ id: uid('a'), text: '', correct: false, points: {} }); markDirty(); render(); }) }));
+			answersField.appendChild(el('button', { type: 'button', class: 'button', 'data-action': 'add-answer', 'data-focus': 'add-answer-' + q.id, text: t.add_answer, onclick: act('add-answer-' + q.id, function () { q.answers.push({ id: uid('a'), text: '', correct: false, points: {}, products: [] }); markDirty(); render(); }) }));
 			card.appendChild(answersField);
 			list.appendChild(card);
 		});
 		var add = el('button', { type: 'button', class: 'button button-secondary', 'data-action': 'add-question', 'data-focus': 'add-question', text: t.add_question, onclick: act('add-question', function () {
-			state.questions.push({ id: uid('q'), text: '', image_id: 0, type: 'single', answers: [{ id: uid('a'), text: '', correct: true, points: {} }, { id: uid('a'), text: '', correct: false, points: {} }] });
+			state.questions.push({ id: uid('q'), text: '', image_id: 0, type: 'single', answers: [{ id: uid('a'), text: '', correct: true, points: {}, products: [] }, { id: uid('a'), text: '', correct: false, points: {}, products: [] }] });
 			markDirty(); render();
 		}) });
 		return section(t.questions, [errorFor('questions'), list, add], null, 'questions');
@@ -191,6 +248,8 @@
 
 	function sectionResults() {
 		var list = el('div', { class: 'bgq-items' });
+		var resultsHelp = state.mode === 'score' ? t.results_help_score : (state.mode === 'product' ? t.results_help_product : t.results_help_outcome);
+		list.appendChild(el('p', { class: 'description bgq-section-intro', text: resultsHelp }));
 		state.results.forEach(function (r, ri) {
 			var path = 'results.' + ri;
 			var card = el('div', { class: 'bgq-item' + (errors[path + '.title'] || errors[path + '.range'] ? ' has-error' : '') });
@@ -215,21 +274,49 @@
 			card.appendChild(field(t.image, imagePicker(function () { return r.image_id; }, function (v) { r.image_id = v; }), path + '.image'));
 			card.appendChild(field(t.button_label, input('text', r.button_label, function (v) { r.button_label = v; }), path + '.button_label'));
 			card.appendChild(field(t.button_url, input('url', r.button_url, function (v) { r.button_url = v; }, { class: 'large-text' }), path + '.button_url'));
-			if (B.woocommerce_active) { card.appendChild(field(t.product, productPicker(r), path + '.product_id')); }
+			if (B.woocommerce_active) {
+				var productLabel = (state.settings.product_recommendation === 'answer_matches' || state.mode === 'product') ? t.fallback_products : t.products;
+				card.appendChild(field(productLabel, resultProducts(r), path + '.product_ids'));
+			}
 			list.appendChild(card);
 		});
 		var add = el('button', { type: 'button', class: 'button button-secondary', 'data-action': 'add-result', 'data-focus': 'add-result', text: t.add_result, onclick: act('add-result', function () {
-			state.results.push({ id: uid('r'), title: '', text: '', image_id: 0, button_label: '', button_url: '', product_id: 0, min: 0, max: 100 });
+			state.results.push(newResult());
 			markDirty(); render();
 		}) });
-		return section(t.results, [errorFor('results'), list, add], null, 'results');
+		return section(t.results, [errorFor('results'), list, state.mode === 'product' && state.results.length ? null : add], null, 'results');
+	}
+	function newResult() {
+		return { id: uid('r'), title: '', text: '', image_id: 0, button_label: '', button_url: '', product_id: 0, product_ids: [], min: 0, max: 100 };
 	}
 
-	function productPicker(r) {
+	// Several products: the chosen ones (each with Remove) and a search that adds one. get() returns the id list, set(ids) stores it.
+	function productsPicker(get, set) {
 		var wrap = el('div', { class: 'bgq-product-picker' });
-		var chosen = el('span', { class: 'bgq-product-picker__chosen', text: r.product_id ? '#' + r.product_id : t.product_none });
-		var search = el('input', { type: 'search', class: 'regular-text', placeholder: t.product_search });
+		var list = el('ul', { class: 'bgq-product-picker__chosen-list' });
+		var search = el('input', { type: 'search', class: 'regular-text', placeholder: t.product_search, 'aria-label': t.product_search });
 		var results = el('ul', { class: 'bgq-product-picker__results' });
+		var replacingIndex = null;
+		var draw = function () {
+			list.innerHTML = '';
+			var ids = get() || [];
+			if (!ids.length) { list.appendChild(el('li', { class: 'description', text: t.product_none })); }
+			ids.forEach(function (id, i) {
+				var name = el('span', { text: '#' + id });
+				fetchProductName(id, name);
+				list.appendChild(el('li', {}, [
+					name,
+					el('span', { class: 'bgq-product-picker__actions' }, [
+						el('button', { type: 'button', class: 'button-link', text: t.edit, onclick: function () {
+							replacingIndex = i; search.value = ''; search.placeholder = t.product_replace_search; search.focus();
+						} }),
+						el('button', { type: 'button', class: 'button-link bgq-remove', text: t.remove, onclick: function () {
+							var next = (get() || []).slice(); next.splice(i, 1); set(next); replacingIndex = null; search.placeholder = t.product_search; markDirty(); draw(); search.focus();
+						} })
+					])
+				]));
+			});
+		};
 		var timer;
 		search.addEventListener('input', function () {
 			clearTimeout(timer);
@@ -237,26 +324,287 @@
 			if (term.length < 2) { results.innerHTML = ''; return; }
 			timer = setTimeout(function () {
 				window.fetch(B.product_search_url + '?search=' + encodeURIComponent(term) + '&per_page=8', { credentials: 'same-origin' })
-					.then(function (res) { return res.json(); })
+					.then(function (res) { if (!res.ok) { throw new Error('Product search failed'); } return res.json(); })
 					.then(function (items) {
 						results.innerHTML = '';
+						if (!(items || []).length) { results.appendChild(el('li', { class: 'description', text: t.product_search_empty })); return; }
 						(items || []).forEach(function (p) {
 							results.appendChild(el('li', {}, [el('button', { type: 'button', class: 'button-link', text: p.name + ' (#' + p.id + ')', onclick: function () {
-								r.product_id = p.id; chosen.textContent = p.name + ' (#' + p.id + ')'; results.innerHTML = ''; search.value = ''; markDirty();
+								var ids = (get() || []).slice();
+								if (replacingIndex !== null) {
+									ids[replacingIndex] = p.id; ids = ids.filter(function (id, index) { return ids.indexOf(id) === index; }); set(ids); markDirty();
+								} else if (ids.indexOf(p.id) === -1 && ids.length < B.max_products) { ids.push(p.id); set(ids); markDirty(); }
+								replacingIndex = null; search.placeholder = t.product_search; results.innerHTML = ''; search.value = ''; draw(); search.focus();
 							} })]));
 						});
-					}).catch(function () { results.innerHTML = ''; });
+					}).catch(function () { results.innerHTML = ''; results.appendChild(el('li', { class: 'description', text: t.product_search_failed })); });
 			}, 250);
 		});
-		var clear = el('button', { type: 'button', class: 'button-link', text: t.remove, onclick: function () { r.product_id = 0; chosen.textContent = t.product_none; markDirty(); } });
-		if (r.product_id) { fetchProductName(r.product_id, chosen); }
-		wrap.appendChild(el('div', {}, [chosen, ' ', clear]));
+		draw();
+		wrap.appendChild(list);
+		wrap.appendChild(el('p', { class: 'description bgq-product-picker__help', text: t.product_picker_help }));
 		wrap.appendChild(search);
 		wrap.appendChild(results);
 		return wrap;
 	}
+	function resultProducts(r) {
+		if (!r.product_ids) { r.product_ids = r.product_id ? [r.product_id] : []; }
+		return productsPicker(function () { return r.product_ids; }, function (ids) { r.product_ids = ids; r.product_id = ids.length ? ids[0] : 0; });
+	}
 	function fetchProductName(id, node) {
-		window.fetch(B.product_search_url + '/' + id, { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (p) { if (p && p.name) { node.textContent = p.name + ' (#' + p.id + ')'; } }).catch(function () {});
+		var key = String(id);
+		if (!productNameCache[key]) {
+			productNameCache[key] = window.fetch(B.product_search_url + '/' + id, { credentials: 'same-origin' })
+				.then(function (r) { if (!r.ok) { throw new Error('Product lookup failed'); } return r.json(); })
+				.then(function (p) { return p && p.name ? p.name + ' (#' + p.id + ')' : ''; })
+				.catch(function () { delete productNameCache[key]; return ''; });
+		}
+		productNameCache[key].then(function (label) { if (label) { node.textContent = label; } });
+	}
+
+	function effectTarget(effect) {
+		if (effect.target === 'term') {
+			return B.catalog_terms[effect.taxonomy + ':' + effect.term_id] || (effect.taxonomy + ' #' + effect.term_id);
+		}
+		return '#' + effect.product_id;
+	}
+
+	function productEffectEditor(answer) {
+		var wrap = el('div', { class: 'bgq-rule-editor' });
+		wrap.appendChild(el('strong', { text: t.finder_rules }));
+		wrap.appendChild(el('p', { class: 'description', text: t.finder_rules_help }));
+		var rules = el('div', { class: 'bgq-rule-list' });
+		(answer.effects || []).forEach(function (effect, index) {
+			var action = select({ boost: t.finder_boost, exclude: t.finder_exclude }, effect.action || 'boost', function (v) { effect.action = v; if (v === 'exclude') { effect.weight = 0; } else if (!effect.weight) { effect.weight = 1; } render(); });
+			var target = el('span', { class: 'bgq-rule-target', text: effectTarget(effect) });
+			if (effect.target !== 'term') { fetchProductName(effect.product_id, target); }
+			var children = [action, target];
+			if (effect.action !== 'exclude') {
+				children.push(el('label', { class: 'bgq-inline' }, [t.finder_strength + ' ', input('number', effect.weight || 1, function (v) { effect.weight = v; }, { min: 1, max: 10, class: 'small-text' })]));
+			}
+			children.push(el('button', { type: 'button', class: 'button-link bgq-remove', text: t.remove, onclick: function () { answer.effects.splice(index, 1); markDirty(); render(); } }));
+			rules.appendChild(el('div', { class: 'bgq-rule-row' }, children));
+		});
+		wrap.appendChild(rules);
+
+		var search = el('input', { type: 'search', class: 'regular-text', placeholder: t.product_search, 'aria-label': t.product_search });
+		var found = el('ul', { class: 'bgq-product-picker__results' });
+		var timer;
+		search.addEventListener('input', function () {
+			clearTimeout(timer);
+			var term = search.value.trim();
+			if (term.length < 2) { found.innerHTML = ''; return; }
+			timer = setTimeout(function () {
+				window.fetch(B.product_search_url + '?search=' + encodeURIComponent(term) + '&per_page=8', { credentials: 'same-origin' })
+					.then(function (res) { return res.json(); })
+					.then(function (items) {
+						found.innerHTML = '';
+						(items || []).forEach(function (product) {
+							found.appendChild(el('li', {}, [el('button', { type: 'button', class: 'button-link', text: t.finder_boost + ': ' + product.name, onclick: function () {
+								answer.effects.push({ target: 'product', product_id: product.id, action: 'boost', weight: 1 });
+								markDirty(); render();
+							} })]));
+						});
+					});
+			}, 250);
+		});
+		wrap.appendChild(el('div', { class: 'bgq-rule-add' }, [el('label', {}, [t.finder_product, search]), found]));
+
+		var catalogSearch = el('input', { type: 'search', class: 'regular-text', placeholder: t.finder_pick_catalog, 'aria-label': t.finder_catalog });
+		var catalogFound = el('ul', { class: 'bgq-product-picker__results' });
+		var catalogTimer;
+		catalogSearch.addEventListener('input', function () {
+			clearTimeout(catalogTimer);
+			var value = catalogSearch.value.trim();
+			if (value.length < 2) { catalogFound.innerHTML = ''; return; }
+			catalogTimer = setTimeout(function () {
+				catalogTargetSearch(value)
+					.then(function (items) {
+						catalogFound.innerHTML = '';
+						(items || []).forEach(function (item) {
+							catalogFound.appendChild(el('li', {}, [el('button', { type: 'button', class: 'button-link', text: t.finder_boost + ': ' + item.label, onclick: function () {
+								B.catalog_terms[item.id] = item.label;
+								answer.effects.push({ target: 'term', taxonomy: item.taxonomy, term_id: item.term_id, action: 'boost', weight: 1 });
+								markDirty(); render();
+							} })]));
+						});
+					});
+			}, 250);
+		});
+		wrap.appendChild(el('div', { class: 'bgq-rule-add bgq-rule-add--catalog' }, [el('label', {}, [t.finder_catalog, catalogSearch]), catalogFound]));
+		return wrap;
+	}
+
+	function catalogTargetSearch(term) {
+		var url = B.catalog_search_url + '?search=' + encodeURIComponent(term);
+		if (window.wp && wp.apiFetch) { return wp.apiFetch({ url: url }); }
+		return window.fetch(url, { credentials: 'same-origin', headers: { 'X-WP-Nonce': B.nonce } }).then(function (response) { return response.json(); });
+	}
+
+	function productNames(ids) {
+		if (!ids || !ids.length) { return el('span', { class: 'description', text: t.map_no_products }); }
+		var wrap = el('span', { class: 'bgq-map-products' });
+		ids.forEach(function (id) {
+			var name = el('span', { class: 'bgq-map-tag', text: '#' + id });
+			fetchProductName(id, name);
+			wrap.appendChild(name);
+		});
+		return wrap;
+	}
+
+	function effectNames(effects) {
+		if (!effects || !effects.length) { return el('span', { class: 'description', text: t.map_no_products }); }
+		var wrap = el('span', { class: 'bgq-map-products' });
+		effects.forEach(function (effect) {
+			var prefix = effect.action === 'exclude' ? '− ' : '+' + (effect.weight || 1) + ' ';
+			var name = el('span', { text: effectTarget(effect) });
+			var tag = el('span', { class: 'bgq-map-tag' + (effect.action === 'exclude' ? ' is-exclude' : '') }, [prefix, name]);
+			if (effect.target !== 'term') { fetchProductName(effect.product_id, name); }
+			wrap.appendChild(tag);
+		});
+		return wrap;
+	}
+
+	function sectionRecommendationMap() {
+		if (!B.woocommerce_active) { return null; }
+		var table = el('table', { class: 'widefat striped bgq-map' });
+		var head = el('thead', {}, [el('tr', {}, [
+			el('th', { text: t.map_question }),
+			el('th', { text: t.map_answer }),
+			el('th', { text: t.map_result }),
+			el('th', { text: t.map_products })
+		])]);
+		var body = el('tbody');
+		state.questions.forEach(function (q, qi) {
+			q.answers.forEach(function (a, ai) {
+				var effect;
+				if (state.mode === 'score') {
+					effect = a.correct ? t.map_correct : t.map_incorrect;
+				} else if (state.mode === 'product') {
+					effect = t.finder_direct;
+				} else {
+					var points = [];
+					state.results.forEach(function (r) {
+						var value = parseInt((a.points || {})[r.id], 10) || 0;
+						if (value > 0) { points.push((r.title || ('#' + r.id)) + ': +' + value); }
+					});
+					effect = points.length ? points.join(', ') : t.map_no_result;
+				}
+				var products = state.mode === 'product'
+					? effectNames(a.effects || [])
+					: (state.settings.product_recommendation === 'answer_matches'
+						? productNames(a.products || [])
+						: el('span', { class: 'description', text: t.recommend_by_result }));
+				body.appendChild(el('tr', {}, [
+					el('td', { text: (qi + 1) + '. ' + (q.text || t.question_text) }),
+					el('td', { text: (ai + 1) + '. ' + (a.text || t.answer_text) }),
+					el('td', { text: effect }),
+					el('td', {}, [products])
+				]));
+			});
+		});
+		table.appendChild(head);
+		table.appendChild(body);
+		return section(t.recommendation_map, [
+			el('p', { class: 'description bgq-section-intro', text: t.recommendation_map_help }),
+			el('div', { class: 'bgq-map-scroll' }, [table])
+		], null, 'recommendation-map');
+	}
+
+	function setupWarnings() {
+		var warnings = [];
+		if (state.mode !== 'product') { return warnings; }
+		var hasBoost = false;
+		var candidates = {};
+		state.questions.forEach(function (q) {
+			q.answers.forEach(function (a) {
+				(a.effects || []).forEach(function (effect) {
+					if (effect.action !== 'exclude') { hasBoost = true; if (effect.target === 'product') { candidates[effect.product_id] = true; } }
+				});
+			});
+		});
+		var hasFallback = state.results.some(function (r) {
+			var ids = r.product_ids || (r.product_id ? [r.product_id] : []);
+			ids.forEach(function (id) { candidates[id] = true; });
+			return ids.length > 0;
+		});
+		state.questions.forEach(function (q, qi) {
+			q.answers.forEach(function (a, ai) {
+				var effects = a.effects || [];
+				if (!effects.length) { warnings.push((q.text || (t.map_question + ' ' + (qi + 1))) + ' → ' + (a.text || (t.map_answer + ' ' + (ai + 1))) + ' ' + t.warning_no_rule + '.'); }
+			});
+			if (q.answers.length) {
+				var alwaysExcluded = null;
+				q.answers.forEach(function (a) {
+					var excluded = (a.effects || []).filter(function (effect) { return effect.action === 'exclude' && effect.target === 'product'; }).map(function (effect) { return String(effect.product_id); });
+					alwaysExcluded = alwaysExcluded === null ? excluded : alwaysExcluded.filter(function (id) { return excluded.indexOf(id) !== -1; });
+				});
+				(alwaysExcluded || []).forEach(function (id) { if (candidates[id]) { warnings.push(t.warning_unreachable.replace('%1$s', '#' + id).replace('%2$s', q.text || (t.map_question + ' ' + (qi + 1)))); } });
+			}
+		});
+		if (!hasBoost && !hasFallback) { warnings.push(t.warning_no_boost); }
+		if (state.results.length > 1) { warnings.push(t.warning_multiple_results); }
+		return warnings;
+	}
+
+	function sectionSetupCheck() {
+		var warnings = setupWarnings();
+		return section(t.setup_check, [warnings.length
+			? el('ul', { class: 'bgq-warning-list' }, warnings.map(function (warning) { return el('li', { text: warning }); }))
+			: el('p', { class: 'bgq-ready', text: t.no_setup_warnings })], null, 'setup-check');
+	}
+
+	function sectionPreview() {
+		var body = [el('p', { class: 'description bgq-section-intro', text: t.preview_help })];
+		state.questions.forEach(function (q) {
+			var choices = el('div', { class: 'bgq-preview-answers' });
+			q.answers.forEach(function (a) {
+				var type = q.type === 'multiple' ? 'checkbox' : 'radio';
+				var control = input(type, (previewAnswers[q.id] || []).indexOf(a.id) !== -1, function (checked) {
+					var selected = previewAnswers[q.id] || [];
+					if (type === 'radio') { selected = checked ? [a.id] : []; }
+					else if (checked && selected.indexOf(a.id) === -1) { selected.push(a.id); }
+					else if (!checked) { selected = selected.filter(function (id) { return id !== a.id; }); }
+					previewAnswers[q.id] = selected;
+				}, { noDirty: true });
+				if (type === 'radio') { control.name = 'bgq-preview-' + q.id; }
+				choices.appendChild(el('label', { for: control.id }, [control, ' ' + (a.text || t.answer_text)]));
+			});
+			body.push(el('fieldset', { class: 'bgq-preview-question' }, [el('legend', { text: q.text || t.question_text }), choices]));
+		});
+		var output = el('div', { class: 'bgq-preview-output', 'aria-live': 'polite' });
+		body.push(el('button', { type: 'button', class: 'button button-primary', text: t.run_preview, onclick: function () {
+			output.textContent = t.saving;
+			request(Object.assign({ preview_answers: previewAnswers }, exportable())).then(function (res) {
+				output.innerHTML = '';
+				if (!res.ok || !res.json) { output.appendChild(el('p', { class: 'bgq-field__error', text: t.preview_failed })); return; }
+				if (res.json.result_title) { output.appendChild(el('h3', { text: res.json.result_title })); }
+				var products = res.json.products || [];
+				if (!products.length) { output.appendChild(el('p', { class: 'bgq-field__error', text: t.preview_empty })); return; }
+				products.forEach(function (product, index) {
+					output.appendChild(el('div', { class: 'bgq-preview-product' }, [
+						el('strong', { text: (index + 1) + '. ' + product.name }),
+						product.reason ? el('span', { class: 'description', text: t.recommended_because.replace('%s', product.reason) }) : null
+					]));
+				});
+			}).catch(function () { output.textContent = t.preview_failed; });
+		} }));
+		body.push(output);
+		return section(t.preview, body, null, 'preview');
+	}
+
+	function stepNav() {
+		var labels = [t.step_setup, t.step_results, t.step_questions, t.step_test, t.step_publish];
+		return el('div', { class: 'bgq-steps', role: 'navigation' }, labels.map(function (label, index) {
+			return el('button', { type: 'button', class: 'bgq-step' + (currentStep === index ? ' is-current' : ''), 'aria-current': currentStep === index ? 'step' : null, text: label, onclick: function () { currentStep = index; render(); window.scrollTo(0, 0); } });
+		}));
+	}
+
+	function stepFooter() {
+		var buttons = [];
+		if (currentStep > 0) { buttons.push(el('button', { type: 'button', class: 'button', text: '← ' + t.previous_step, onclick: function () { currentStep--; render(); window.scrollTo(0, 0); } })); }
+		if (currentStep < 4) { buttons.push(el('button', { type: 'button', class: 'button button-primary', text: t.next_step + ' →', onclick: function () { currentStep++; render(); window.scrollTo(0, 0); } })); }
+		return el('div', { class: 'bgq-step-footer' }, buttons);
 	}
 
 	function sectionReward() {
@@ -343,6 +691,10 @@
 				btn.disabled = false;
 				if (!res.ok) {
 					errors = (res.json && res.json.data && res.json.data.errors) || {};
+					var errorKeys = Object.keys(errors);
+					if (errorKeys.some(function (key) { return key.indexOf('questions') === 0; })) { currentStep = 2; }
+					else if (errorKeys.some(function (key) { return key.indexOf('results') === 0; })) { currentStep = 1; }
+					else { currentStep = 0; }
 					render();
 					setStatus((res.json && res.json.message) || t.save_failed, 'is-error');
 					return;
@@ -378,11 +730,20 @@
 		root.innerHTML = '';
 		root.appendChild(sectionHeader());
 		var summary = errorSummary(); if (summary) { root.appendChild(summary); }
-		root.appendChild(sectionSettings());
-		root.appendChild(sectionQuestions());
-		root.appendChild(sectionResults());
-		var reward = sectionReward(); if (reward) { root.appendChild(reward); }
-		root.appendChild(sectionEmbed());
+		root.appendChild(stepNav());
+		if (currentStep === 0) { root.appendChild(sectionSettings()); }
+		if (currentStep === 1) { root.appendChild(sectionResults()); }
+		if (currentStep === 2) { root.appendChild(sectionQuestions()); }
+		if (currentStep === 3) {
+			root.appendChild(sectionSetupCheck());
+			var map = sectionRecommendationMap(); if (map) { root.appendChild(map); }
+			root.appendChild(sectionPreview());
+		}
+		if (currentStep === 4) {
+			var reward = sectionReward(); if (reward) { root.appendChild(reward); }
+			root.appendChild(sectionEmbed());
+		}
+		root.appendChild(stepFooter());
 		root.appendChild(el('p', {}, [el('a', { href: B.list_url, text: '← ' + t.back_to_list })]));
 		window.scrollTo(0, scrollY);
 		if (pendingFocus) {

@@ -3,7 +3,9 @@
 namespace Bgq\Rest;
 
 use Bgq\Quiz\Config;
+use Bgq\Quiz\Grader;
 use Bgq\Quiz\PostType;
+use Bgq\Frontend\Results;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -29,6 +31,51 @@ class QuizConfigController {
 				],
 			]
 		);
+		register_rest_route(
+			AttemptsController::NS,
+			'/quizzes/(?P<id>\d+)/catalog-targets',
+			[
+				'methods'             => 'GET',
+				'permission_callback' => [ __CLASS__, 'can_edit' ],
+				'callback'            => [ __CLASS__, 'catalog_targets' ],
+			]
+		);
+	}
+
+	/**
+	 * Search WooCommerce categories, tags and global attribute terms for rules.
+	 */
+	public static function catalog_targets( \WP_REST_Request $request ) {
+		$search = sanitize_text_field( (string) $request->get_param( 'search' ) );
+		if ( strlen( $search ) < 2 ) {
+			return rest_ensure_response( [] );
+		}
+		$out        = [];
+		$taxonomies = [];
+		foreach ( get_object_taxonomies( 'product', 'objects' ) as $taxonomy => $object ) {
+			if ( ! in_array( $taxonomy, [ 'product_cat', 'product_tag' ], true ) && 0 !== strpos( $taxonomy, 'pa_' ) ) {
+				continue;
+			}
+			$taxonomies[ $taxonomy ] = $object;
+		}
+		$terms = get_terms( [ 'taxonomy' => array_keys( $taxonomies ), 'hide_empty' => false, 'name__like' => $search, 'number' => 30 ] );
+		if ( is_wp_error( $terms ) ) {
+			return rest_ensure_response( [] );
+		}
+		foreach ( $terms as $term ) {
+			$object = $taxonomies[ $term->taxonomy ] ?? null;
+			if ( ! $object ) {
+				continue;
+			}
+			$out[] = [
+				'id'       => $term->taxonomy . ':' . $term->term_id,
+				'taxonomy' => $term->taxonomy,
+				'term_id'  => (int) $term->term_id,
+				'label'    => sprintf( '%1$s: %2$s', $object->labels->singular_name, $term->name ),
+			];
+		}
+		usort( $out, static fn( $a, $b ) => strcasecmp( $a['label'], $b['label'] ) );
+		return rest_ensure_response( array_slice( $out, 0, 30 ) );
 	}
 
 	/**
@@ -64,6 +111,31 @@ class QuizConfigController {
 		}
 		if ( ! empty( $raw['validate_only'] ) ) {
 			return rest_ensure_response( $config );
+		}
+		if ( isset( $raw['preview_answers'] ) && is_array( $raw['preview_answers'] ) ) {
+			$grade    = Grader::grade( $config, $raw['preview_answers'] );
+			$products = [];
+			foreach ( $grade['product_ids'] as $product_id ) {
+				$product = Results::product( (int) $product_id );
+				if ( $product ) {
+					$product['reason'] = implode( ', ', (array) ( $grade['product_reasons'][ $product['id'] ] ?? [] ) );
+					$products[] = $product;
+				}
+			}
+			$result_title = '';
+			foreach ( $config['results'] as $result ) {
+				if ( $result['id'] === $grade['result_id'] ) {
+					$result_title = $result['title'];
+					break;
+				}
+			}
+			return rest_ensure_response(
+				[
+					'grade'        => $grade,
+					'result_title' => $result_title,
+					'products'     => $products,
+				]
+			);
 		}
 		Config::save( $id, $config );
 

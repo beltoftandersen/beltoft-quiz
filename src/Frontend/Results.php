@@ -2,6 +2,8 @@
 
 namespace Bgq\Frontend;
 
+use Bgq\Quiz\ProductMatcher;
+
 defined( 'ABSPATH' ) || exit;
 
 /**
@@ -26,9 +28,10 @@ class Results {
 	/**
 	 * Render a result by id.
 	 *
-	 * @return array|null { id, title, text, image, button_label, button_url, product }
+	 * @param int[]|null $product_ids Products to show (Grader::recommend); null = the result's own.
+	 * @return array|null { id, title, text, image, button_label, button_url, products, product (the first) }
 	 */
-	public static function render( array $config, string $result_id ) {
+	public static function render( array $config, string $result_id, ?array $product_ids = null ) {
 		$result = null;
 		foreach ( $config['results'] as $r ) {
 			if ( $r['id'] === $result_id ) {
@@ -39,6 +42,10 @@ class Results {
 		if ( ! $result ) {
 			return null;
 		}
+		if ( null === $product_ids ) {
+			$product_ids = (array) ( $result['product_ids'] ?? ( ! empty( $result['product_id'] ) ? [ $result['product_id'] ] : [] ) );
+		}
+		$products = array_values( array_filter( array_map( [ __CLASS__, 'product' ], array_map( 'intval', $product_ids ) ) ) );
 
 		return [
 			'id'           => $result['id'],
@@ -47,7 +54,8 @@ class Results {
 			'image'        => ! empty( $result['image_id'] ) ? (string) wp_get_attachment_image_url( (int) $result['image_id'], 'large' ) : '',
 			'button_label' => (string) ( $result['button_label'] ?? '' ),
 			'button_url'   => (string) ( $result['button_url'] ?? '' ),
-			'product'      => self::product( (int) ( $result['product_id'] ?? 0 ) ),
+			'products'     => $products,
+			'product'      => $products ? $products[0] : null, // older players show one product
 		];
 	}
 
@@ -56,12 +64,12 @@ class Results {
 	 *
 	 * @return array|null
 	 */
-	private static function product( int $product_id ) {
+	public static function product( int $product_id ) {
 		if ( ! $product_id || ! function_exists( 'wc_get_product' ) ) {
 			return null;
 		}
 		$product = wc_get_product( $product_id );
-		if ( ! $product || 'publish' !== $product->get_status() ) {
+		if ( ! $product || ! ProductMatcher::is_eligible( $product_id ) ) {
 			return null;
 		}
 		$image_id = $product->get_image_id();

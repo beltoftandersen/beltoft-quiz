@@ -48,6 +48,10 @@ $again = apply_filters( 'bgq_attempt_reward', null, $aid, $config, $pass_grade )
 bgq_assert_eq( $reward['code'], $again['code'], 'repeat returns the same card' );
 bgq_assert_eq( 1, count( \Bgcw\GiftCard\Repository::get_by_recipient( 'winner@example.test' ) ), 'only one card for the attempt' );
 
+// The database claim, not a check-then-create window, owns reward issuance.
+$competing = bgq_t_attempt( $quiz, 100, 'winner@example.test' );
+bgq_assert_eq( $aid, Attempts::claim_reward( $competing, $quiz, 'winner@example.test' ), 'unique reward claim remains owned by the first attempt' );
+
 // Failing attempt → nothing.
 $fail_grade = Grader::grade( $config, [ 'q1' => [ 'b' ] ] );
 $fid        = bgq_t_attempt( $quiz, 0, 'loser@example.test' );

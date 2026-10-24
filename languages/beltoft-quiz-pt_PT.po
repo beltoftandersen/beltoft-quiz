@@ -1,23 +1,23 @@
-# Copyright (C) 2026 beltoft.net
-# This file is distributed under the GPL-2.0-or-later.
 msgid ""
 msgstr ""
-"Project-Id-Version: Beltoft Quiz 1.0.0\n"
+"Project-Id-Version: Beltoft Quiz 1.2.2\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/beltoft-quiz\n"
-"POT-Creation-Date: 2026-09-26T06:33:31+00:00\n"
-"PO-Revision-Date: 2026-09-26T06:29:46+00:00\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
-"Language: pt\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"POT-Creation-Date: 2026-09-26T06:33:31+00:00\n"
+"PO-Revision-Date: 2026-09-26T06:29:46+00:00\n"
+"Language: pt\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: beltoft-quiz\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
 #. Plugin Name of the plugin
-#: beltoft-quiz.php src/Support/Privacy.php:21 src/Support/Privacy.php:26
+#: beltoft-quiz.php
+#: src/Support/Privacy.php:21
+#: src/Support/Privacy.php:26
 #: src/Support/Privacy.php:82
 msgid "Beltoft Quiz"
 msgstr "Beltoft Quiz"
@@ -29,12 +29,8 @@ msgstr "https://wordpress.org/plugins/beltoft-quiz/"
 
 #. Description of the plugin
 #: beltoft-quiz.php
-msgid ""
-"Build score and outcome quizzes, capture leads, recommend products and "
-"reward with gift cards. Lightweight, no framework."
-msgstr ""
-"Crie quizzes de pontuação e de resultado, capte contactos, recomende "
-"produtos e ofereça cartões presente. Leve, sem framework."
+msgid "Build score and outcome quizzes, capture leads, recommend products and reward with gift cards. Lightweight, no framework."
+msgstr "Crie quizzes de pontuação e de resultado, capte contactos, recomende produtos e ofereça cartões presente. Leve, sem framework."
 
 #. Author of the plugin
 #: beltoft-quiz.php
@@ -54,8 +50,10 @@ msgstr "Estatísticas"
 msgid "Quiz analytics"
 msgstr "Estatísticas do quiz"
 
-#: src/Admin/Analytics.php:37 src/Admin/EntriesTable.php:33
-#: src/Quiz/PostType.php:28 src/Support/Privacy.php:48
+#: src/Admin/Analytics.php:37
+#: src/Admin/EntriesTable.php:33
+#: src/Quiz/PostType.php:45
+#: src/Support/Privacy.php:48
 msgid "Quiz"
 msgstr "Quiz"
 
@@ -91,7 +89,8 @@ msgstr "Pontuação média"
 msgid "Pass rate"
 msgstr "Taxa de aprovação"
 
-#: src/Admin/Analytics.php:70 src/Admin/Builder.php:133
+#: src/Admin/Analytics.php:70
+#: src/Admin/Builder.php:165
 msgid "Results"
 msgstr "Resultados"
 
@@ -107,296 +106,296 @@ msgstr "Respostas certas por pergunta"
 msgid "No data yet."
 msgstr "Ainda sem dados."
 
-#: src/Admin/Builder.php:97
+#: src/Admin/Builder.php:125
 msgid "Save"
 msgstr "Guardar"
 
-#: src/Admin/Builder.php:98
+#: src/Admin/Builder.php:126
 msgid "Saving…"
 msgstr "A guardar…"
 
-#: src/Admin/Builder.php:99
+#: src/Admin/Builder.php:127
 msgid "Saved."
 msgstr "Guardado."
 
-#: src/Admin/Builder.php:100
+#: src/Admin/Builder.php:128
 msgid "Could not save. Fix the errors below."
 msgstr "Não foi possível guardar. Corrija os erros abaixo."
 
-#: src/Admin/Builder.php:101
+#: src/Admin/Builder.php:129
 msgid "Network error. Please try again."
 msgstr "Erro de rede. Tente novamente."
 
-#: src/Admin/Builder.php:102
+#: src/Admin/Builder.php:130
 msgid "Quiz title"
 msgstr "Título do quiz"
 
-#: src/Admin/Builder.php:103
+#: src/Admin/Builder.php:131
 msgid "Status"
 msgstr "Estado"
 
-#: src/Admin/Builder.php:104
+#: src/Admin/Builder.php:132
 msgid "Draft"
 msgstr "Rascunho"
 
-#: src/Admin/Builder.php:105
+#: src/Admin/Builder.php:133
 msgid "Published"
 msgstr "Publicado"
 
-#: src/Admin/Builder.php:106 src/Admin/SettingsPage.php:24
+#: src/Admin/Builder.php:134
+#: src/Admin/SettingsPage.php:24
 msgid "Settings"
 msgstr "Definições"
 
-#: src/Admin/Builder.php:107
+#: src/Admin/Builder.php:135
 msgid "Quiz type"
 msgstr "Tipo de quiz"
 
-#: src/Admin/Builder.php:108
+#: src/Admin/Builder.php:136
 msgid "Score (right and wrong answers)"
 msgstr "Pontuação (respostas certas e erradas)"
 
-#: src/Admin/Builder.php:109
+#: src/Admin/Builder.php:137
 msgid "Outcome (answers point to a result)"
 msgstr "Resultado (as respostas apontam para um resultado)"
 
-#: src/Admin/Builder.php:110
+#: src/Admin/Builder.php:142
 msgid "Pass mark (%)"
 msgstr "Nota mínima para passar (%)"
 
-#: src/Admin/Builder.php:111
+#: src/Admin/Builder.php:143
 msgid "Time limit in seconds (0 = none)"
 msgstr "Tempo limite em segundos (0 = sem limite)"
 
-#: src/Admin/Builder.php:112
+#: src/Admin/Builder.php:144
 msgid "Shuffle questions"
 msgstr "Baralhar perguntas"
 
-#: src/Admin/Builder.php:113
+#: src/Admin/Builder.php:145
 msgid "Shuffle answers"
 msgstr "Baralhar respostas"
 
-#: src/Admin/Builder.php:114
+#: src/Admin/Builder.php:146
 msgid "One attempt per visitor"
 msgstr "Uma participação por visitante"
 
-#: src/Admin/Builder.php:115
+#: src/Admin/Builder.php:147
 msgid "Ask for name and email before the result"
 msgstr "Pedir nome e e-mail antes do resultado"
 
-#: src/Admin/Builder.php:116
+#: src/Admin/Builder.php:148
 msgid "Consent text (optional, shown with a checkbox)"
 msgstr "Texto de consentimento (opcional, mostrado com uma caixa de seleção)"
 
-#: src/Admin/Builder.php:117
+#: src/Admin/Builder.php:149
 msgid "Accent color"
 msgstr "Cor de destaque"
 
-#: src/Admin/Builder.php:118
+#: src/Admin/Builder.php:150
 msgid "Button labels"
 msgstr "Textos dos botões"
 
-#: src/Admin/Builder.php:119
+#: src/Admin/Builder.php:151
 msgid "Questions"
 msgstr "Perguntas"
 
-#: src/Admin/Builder.php:120
+#: src/Admin/Builder.php:152
 msgid "Add question"
 msgstr "Adicionar pergunta"
 
-#: src/Admin/Builder.php:121
+#: src/Admin/Builder.php:153
+#: src/Admin/Builder.php:195
 msgid "Question"
 msgstr "Pergunta"
 
-#: src/Admin/Builder.php:122
+#: src/Admin/Builder.php:154
 msgid "Answer type"
 msgstr "Tipo de resposta"
 
-#: src/Admin/Builder.php:123
+#: src/Admin/Builder.php:155
 msgid "Single choice"
 msgstr "Escolha única"
 
-#: src/Admin/Builder.php:124
+#: src/Admin/Builder.php:156
 msgid "Multiple choice"
 msgstr "Escolha múltipla"
 
-#: src/Admin/Builder.php:125 src/Support/Privacy.php:54
+#: src/Admin/Builder.php:157
+#: src/Support/Privacy.php:54
 msgid "Answers"
 msgstr "Respostas"
 
-#: src/Admin/Builder.php:126
+#: src/Admin/Builder.php:158
 msgid "Add answer"
 msgstr "Adicionar resposta"
 
-#: src/Admin/Builder.php:127
+#: src/Admin/Builder.php:159
 msgid "Answer text"
 msgstr "Texto da resposta"
 
-#: src/Admin/Builder.php:128
+#: src/Admin/Builder.php:160
 msgid "Correct"
 msgstr "Certa"
 
-#: src/Admin/Builder.php:129
+#: src/Admin/Builder.php:161
 msgid "Points for"
 msgstr "Pontos para"
 
-#: src/Admin/Builder.php:130
+#: src/Admin/Builder.php:162
 msgid "Image"
 msgstr "Imagem"
 
-#: src/Admin/Builder.php:131
+#: src/Admin/Builder.php:163
 msgid "Choose image"
 msgstr "Escolher imagem"
 
-#: src/Admin/Builder.php:132
+#: src/Admin/Builder.php:164
 msgid "Remove image"
 msgstr "Remover imagem"
 
-#: src/Admin/Builder.php:134
+#: src/Admin/Builder.php:166
 msgid "Add result"
 msgstr "Adicionar resultado"
 
-#: src/Admin/Builder.php:135
+#: src/Admin/Builder.php:167
 msgid "Title"
 msgstr "Título"
 
-#: src/Admin/Builder.php:136
+#: src/Admin/Builder.php:168
 msgid "Text (HTML allowed)"
 msgstr "Texto (HTML permitido)"
 
-#: src/Admin/Builder.php:137
+#: src/Admin/Builder.php:169
 msgid "Score range (%)"
 msgstr "Intervalo de pontuação (%)"
 
-#: src/Admin/Builder.php:138
+#: src/Admin/Builder.php:170
 msgid "Button label"
 msgstr "Texto do botão"
 
-#: src/Admin/Builder.php:139
+#: src/Admin/Builder.php:171
 msgid "Button link"
 msgstr "Ligação do botão"
 
-#: src/Admin/Builder.php:140
+#: src/Admin/Builder.php:172
 msgid "WooCommerce product (optional)"
 msgstr "Produto WooCommerce (opcional)"
 
-#: src/Admin/Builder.php:141
+#: src/Admin/Builder.php:234
 msgid "Search products…"
 msgstr "Pesquisar produtos…"
 
-#: src/Admin/Builder.php:142
+#: src/Admin/Builder.php:239
 msgid "No product"
 msgstr "Sem produto"
 
-#: src/Admin/Builder.php:143
+#: src/Admin/Builder.php:241
 msgid "Gift card reward"
 msgstr "Prémio em cartão presente"
 
-#: src/Admin/Builder.php:144
+#: src/Admin/Builder.php:242
 msgid "Send a gift card when the quiz is completed"
 msgstr "Enviar um cartão presente quando o quiz é concluído"
 
-#: src/Admin/Builder.php:145
+#: src/Admin/Builder.php:243
 msgid "Amount"
 msgstr "Valor"
 
-#: src/Admin/Builder.php:146
+#: src/Admin/Builder.php:244
 msgid "Expires after (days, 0 = never)"
 msgstr "Expira após (dias, 0 = nunca)"
 
-#: src/Admin/Builder.php:147
+#: src/Admin/Builder.php:245
 msgid "Send when"
 msgstr "Enviar quando"
 
-#: src/Admin/Builder.php:148
+#: src/Admin/Builder.php:246
 msgid "Always"
 msgstr "Sempre"
 
-#: src/Admin/Builder.php:149
+#: src/Admin/Builder.php:247
 msgid "The quiz is passed"
 msgstr "O quiz é passado"
 
-#: src/Admin/Builder.php:150
+#: src/Admin/Builder.php:248
 msgid "The result is one of"
 msgstr "O resultado é um de"
 
-#: src/Admin/Builder.php:151
-msgid ""
-"A reward needs an email: turn on \"Ask for name and email\" or the visitor "
-"must be logged in."
-msgstr ""
-"Um prémio precisa de um e-mail: ative \"Pedir nome e e-mail\" ou o visitante "
-"tem de ter sessão iniciada."
+#: src/Admin/Builder.php:249
+msgid "A reward needs an email: turn on \"Ask for name and email\" or the visitor must be logged in."
+msgstr "Um prémio precisa de um e-mail: ative \"Pedir nome e e-mail\" ou o visitante tem de ter sessão iniciada."
 
-#: src/Admin/Builder.php:152
+#: src/Admin/Builder.php:250
 msgid "Embed"
 msgstr "Incorporar"
 
-#: src/Admin/Builder.php:153
+#: src/Admin/Builder.php:251
 msgid "Paste this shortcode into any page, post or builder element."
-msgstr ""
-"Cole este shortcode em qualquer página, artigo ou elemento do construtor."
+msgstr "Cole este shortcode em qualquer página, artigo ou elemento do construtor."
 
-#: src/Admin/Builder.php:154
+#: src/Admin/Builder.php:252
 msgid "Copy"
 msgstr "Copiar"
 
-#: src/Admin/Builder.php:155
+#: src/Admin/Builder.php:253
 msgid "Copied"
 msgstr "Copiado"
 
-#: src/Admin/Builder.php:156
+#: src/Admin/Builder.php:254
 msgid "Import / Export"
 msgstr "Importar / Exportar"
 
-#: src/Admin/Builder.php:157
+#: src/Admin/Builder.php:255
 msgid "Export JSON"
 msgstr "Exportar JSON"
 
-#: src/Admin/Builder.php:158
+#: src/Admin/Builder.php:256
 msgid "Import JSON"
 msgstr "Importar JSON"
 
-#: src/Admin/Builder.php:159
+#: src/Admin/Builder.php:257
 msgid "That file is not a valid quiz export."
 msgstr "Esse ficheiro não é uma exportação de quiz válida."
 
-#: src/Admin/Builder.php:160
+#: src/Admin/Builder.php:258
 msgid "Remove"
 msgstr "Remover"
 
-#: src/Admin/Builder.php:161
+#: src/Admin/Builder.php:259
 msgid "Move up"
 msgstr "Mover para cima"
 
-#: src/Admin/Builder.php:162
+#: src/Admin/Builder.php:260
 msgid "Move down"
 msgstr "Mover para baixo"
 
-#: src/Admin/Builder.php:163
+#: src/Admin/Builder.php:261
 msgid "Back to quizzes"
 msgstr "Voltar aos quizzes"
 
-#: src/Admin/Builder.php:164
+#: src/Admin/Builder.php:262
 msgid "You have unsaved changes."
 msgstr "Tem alterações por guardar."
 
-#: src/Admin/Builder.php:165
+#: src/Admin/Builder.php:263
 msgid "Please fix these:"
 msgstr "Corrija o seguinte:"
 
-#: src/Admin/Builder.php:175 src/Quiz/PostType.php:29
+#: src/Admin/Builder.php:273
+#: src/Quiz/PostType.php:46
 msgid "Add New Quiz"
 msgstr "Adicionar novo quiz"
 
-#: src/Admin/Builder.php:175 src/Quiz/PostType.php:30
+#: src/Admin/Builder.php:273
+#: src/Quiz/PostType.php:47
 msgid "Edit Quiz"
 msgstr "Editar quiz"
 
-#: src/Admin/Builder.php:178
+#: src/Admin/Builder.php:276
 msgid "Loading the quiz builder…"
 msgstr "A carregar o construtor de quizzes…"
 
-#: src/Admin/Builder.php:192
+#: src/Admin/Builder.php:290
 msgid "Shortcode"
 msgstr "Shortcode"
 
@@ -412,15 +411,18 @@ msgstr "Participações no quiz"
 msgid "Search email or name"
 msgstr "Pesquisar e-mail ou nome"
 
-#: src/Admin/EntriesTable.php:32 src/Support/Privacy.php:49
+#: src/Admin/EntriesTable.php:32
+#: src/Support/Privacy.php:49
 msgid "Date"
 msgstr "Data"
 
-#: src/Admin/EntriesTable.php:34 src/Support/Privacy.php:50
+#: src/Admin/EntriesTable.php:34
+#: src/Support/Privacy.php:50
 msgid "Name"
 msgstr "Nome"
 
-#: src/Admin/EntriesTable.php:35 src/Support/Privacy.php:51
+#: src/Admin/EntriesTable.php:35
+#: src/Support/Privacy.php:51
 msgid "Email"
 msgstr "E-mail"
 
@@ -484,22 +486,21 @@ msgstr "Eliminar todos os dados ao desinstalar"
 
 #: src/Admin/SettingsPage.php:38
 msgid "Remove quizzes, entries and settings when the plugin is deleted."
-msgstr ""
-"Remover quizzes, participações e definições quando o plugin é eliminado."
+msgstr "Remover quizzes, participações e definições quando o plugin é eliminado."
 
-#: src/Admin/SettingsPage.php:49
+#: src/Admin/SettingsPage.php:106
 msgid "Quiz settings"
 msgstr "Definições do quiz"
 
-#: src/Frontend/Shortcode.php:48
+#: src/Frontend/Shortcode.php:47
 msgid "Beltoft Quiz: no quiz found with this ID."
 msgstr "Beltoft Quiz: não existe nenhum quiz com este ID."
 
-#: src/Frontend/Shortcode.php:51
+#: src/Frontend/Shortcode.php:50
 msgid "Beltoft Quiz: this quiz is not published yet."
 msgstr "Beltoft Quiz: este quiz ainda não está publicado."
 
-#: src/Frontend/Shortcode.php:56
+#: src/Frontend/Shortcode.php:55
 msgid "Beltoft Quiz: this quiz has no questions or results yet."
 msgstr "Beltoft Quiz: este quiz ainda não tem perguntas ou resultados."
 
@@ -545,11 +546,13 @@ msgstr "O seu e-mail"
 msgid "I agree"
 msgstr "Concordo"
 
-#: src/Frontend/Shortcode.php:84 src/Rest/AttemptsController.php:83
+#: src/Frontend/Shortcode.php:84
+#: src/Rest/AttemptsController.php:118
 msgid "Please enter a valid email address."
 msgstr "Introduza um endereço de e-mail válido."
 
-#: src/Frontend/Shortcode.php:85 src/Rest/AttemptsController.php:86
+#: src/Frontend/Shortcode.php:85
+#: src/Rest/AttemptsController.php:121
 msgid "Please accept the consent checkbox."
 msgstr "Aceite a caixa de consentimento."
 
@@ -589,107 +592,108 @@ msgstr "Adicionar ao carrinho"
 msgid "View product"
 msgstr "Ver produto"
 
-#: src/Frontend/Shortcode.php:96
+#: src/Frontend/Shortcode.php:98
 msgid "Time is up, sending your answers…"
 msgstr "Acabou o tempo, a enviar as suas respostas…"
 
-#: src/Frontend/Shortcode.php:107
+#: src/Frontend/Shortcode.php:113
 msgid "This quiz needs JavaScript to run."
 msgstr "Este quiz precisa de JavaScript para funcionar."
 
-#: src/Quiz/Config.php:54
+#: src/Quiz/Config.php:69
 msgid "Start"
 msgstr "Começar"
 
-#: src/Quiz/Config.php:55
+#: src/Quiz/Config.php:70
 msgid "Next"
 msgstr "Seguinte"
 
-#: src/Quiz/Config.php:56
+#: src/Quiz/Config.php:71
 msgid "Back"
 msgstr "Anterior"
 
-#: src/Quiz/Config.php:57
+#: src/Quiz/Config.php:72
 msgid "See result"
 msgstr "Ver resultado"
 
-#: src/Quiz/Config.php:58
+#: src/Quiz/Config.php:73
 msgid "Try again"
 msgstr "Tentar novamente"
 
-#: src/Quiz/Config.php:81
+#: src/Quiz/Config.php:96
 msgid "Choose a quiz mode."
 msgstr "Escolha um tipo de quiz."
 
-#: src/Quiz/Config.php:91
+#: src/Quiz/Config.php:106
 msgid "Add at least one result."
 msgstr "Adicione pelo menos um resultado."
 
-#: src/Quiz/Config.php:98
+#: src/Quiz/Config.php:113
 msgid "Add at least one question."
 msgstr "Adicione pelo menos uma pergunta."
 
-#: src/Quiz/Config.php:104
+#: src/Quiz/Config.php:131
 msgid "The quiz has errors."
 msgstr "O quiz tem erros."
 
-#: src/Quiz/Config.php:173
+#: src/Quiz/Config.php:213
 msgid "The minimum score must not exceed the maximum."
 msgstr "A pontuação mínima não pode ser superior à máxima."
 
-#: src/Quiz/Config.php:177
+#: src/Quiz/Config.php:217
 msgid "Give the result a title."
 msgstr "Dê um título ao resultado."
 
-#: src/Quiz/Config.php:241
+#: src/Quiz/Config.php:286
 msgid "Each question needs at least two answers."
 msgstr "Cada pergunta precisa de pelo menos duas respostas."
 
-#: src/Quiz/Config.php:243
+#: src/Quiz/Config.php:288
 msgid "Mark at least one answer as correct."
 msgstr "Marque pelo menos uma resposta como certa."
 
-#: src/Quiz/Config.php:248
+#: src/Quiz/Config.php:293
 msgid "Enter the question text."
 msgstr "Introduza o texto da pergunta."
 
-#: src/Quiz/Config.php:279
+#: src/Quiz/Config.php:385
 msgid "The reward amount must be greater than zero."
 msgstr "O valor do prémio tem de ser superior a zero."
 
-#: src/Quiz/PostType.php:27
+#: src/Quiz/PostType.php:44
 msgid "Quizzes"
 msgstr "Quizzes"
 
-#: src/Quiz/PostType.php:31
+#: src/Quiz/PostType.php:48
 msgid "No quizzes yet."
 msgstr "Ainda não há quizzes."
 
-#: src/Rest/AttemptsController.php:50
+#: src/Rest/AttemptsController.php:63
+#: src/Rest/AttemptsController.php:79
 msgid "This quiz is not available."
 msgstr "Este quiz não está disponível."
 
-#: src/Rest/AttemptsController.php:58
+#: src/Rest/AttemptsController.php:87
 msgid "Time is up for this quiz. Please start again."
 msgstr "Acabou o tempo para este quiz. Comece de novo."
 
-#: src/Rest/AttemptsController.php:61
+#: src/Rest/AttemptsController.php:90
 msgid "This quiz session is not valid. Please reload the page."
 msgstr "Esta sessão do quiz não é válida. Recarregue a página."
 
-#: src/Rest/AttemptsController.php:68
+#: src/Rest/AttemptsController.php:103
 msgid "Too many attempts. Please try again later."
 msgstr "Demasiadas tentativas. Tente novamente mais tarde."
 
-#: src/Rest/AttemptsController.php:122
+#: src/Rest/AttemptsController.php:162
 msgid "Your answers could not be saved. Please try again."
 msgstr "Não foi possível guardar as suas respostas. Tente novamente."
 
-#: src/Rest/QuizConfigController.php:42
+#: src/Rest/QuizConfigController.php:89
 msgid "Quiz not found."
 msgstr "Quiz não encontrado."
 
-#: src/Rest/QuizConfigController.php:45
+#: src/Rest/QuizConfigController.php:92
 msgid "You cannot edit this quiz."
 msgstr "Não pode editar este quiz."
 
@@ -706,15 +710,357 @@ msgid "Result"
 msgstr "Resultado"
 
 #: src/Support/Privacy.php:83
-msgid ""
-"When you take a quiz on this site we store your answers, your score or "
-"result, the time it took, and a hashed form of your IP address. If the quiz "
-"asks for your name and email, we store those too and may email you a gift "
-"card. This data is kept until you ask us to delete it or the site owner "
-"deletes it."
-msgstr ""
-"Quando faz um quiz neste site, guardamos as suas respostas, a sua pontuação "
-"ou resultado, o tempo que demorou e uma versão cifrada do seu endereço IP. "
-"Se o quiz pedir o seu nome e e-mail, guardamos esses dados também e podemos "
-"enviar-lhe um cartão presente por e-mail. Estes dados são mantidos até que "
-"peça a sua eliminação ou o responsável pelo site os elimine."
+msgid "When you take a quiz on this site we store your answers, your score or result, the time it took, and a hashed form of your IP address. If the quiz asks for your name and email, we store those too and may email you a gift card. This data is kept until you ask us to delete it or the site owner deletes it."
+msgstr "Quando faz um quiz neste site, guardamos as suas respostas, a sua pontuação ou resultado, o tempo que demorou e uma versão cifrada do seu endereço IP. Se o quiz pedir o seu nome e e-mail, guardamos esses dados também e podemos enviar-lhe um cartão presente por e-mail. Estes dados são mantidos até que peça a sua eliminação ou o responsável pelo site os elimine."
+
+#: src/Admin/SettingsPage.php:83
+#: src/Integrations/Newsletter.php:39
+msgid "Send me the newsletter"
+msgstr "Quero receber a newsletter"
+
+#: src/Admin/SettingsPage.php:47
+msgid "Newsletter sign-up"
+msgstr "Inscrição na newsletter"
+
+#: src/Admin/SettingsPage.php:49
+msgid "Adds an unticked checkbox to the name and email step of quizzes that ask for an email. When a visitor ticks it, their email is sent to your newsletter webhook as JSON: email, list_id, api_key and source."
+msgstr "Acrescenta uma caixa por marcar ao passo do nome e e-mail, nos quizzes que pedem e-mail. Quando o visitante a marca, o e-mail é enviado para o webhook da newsletter em JSON: email, list_id, api_key e source."
+
+#: src/Admin/SettingsPage.php:71
+msgid "Show the checkbox"
+msgstr "Mostrar a caixa"
+
+#: src/Admin/SettingsPage.php:77
+msgid "Offer the newsletter on quizzes that ask for an email."
+msgstr "Oferecer a newsletter nos quizzes que pedem e-mail."
+
+#: src/Admin/SettingsPage.php:83
+msgid "Checkbox text"
+msgstr "Texto da caixa"
+
+#: src/Admin/SettingsPage.php:84
+msgid "Webhook URL"
+msgstr "URL do webhook"
+
+#: src/Admin/SettingsPage.php:85
+msgid "List ID"
+msgstr "ID da lista"
+
+#: src/Admin/SettingsPage.php:85
+msgid "Sent as list_id. Leave empty if your webhook does not use lists."
+msgstr "Enviado como list_id. Deixa vazio se o webhook não usar listas."
+
+#: src/Admin/SettingsPage.php:88
+msgid "API key"
+msgstr "Chave de API"
+
+#: src/Admin/SettingsPage.php:91
+msgid "A key is saved. Leave empty to keep it, or type a new one to replace it."
+msgstr "Há uma chave guardada. Deixa vazio para a manter, ou escreve uma nova para a substituir."
+
+#: src/Admin/SettingsPage.php:91
+msgid "Sent as api_key."
+msgstr "Enviada como api_key."
+
+#: src/Admin/SettingsPage.php:93
+msgid "Remove the saved key"
+msgstr "Apagar a chave guardada"
+
+#: src/Admin/SettingsPage.php:100
+msgid "Source"
+msgstr "Origem"
+
+#: src/Admin/SettingsPage.php:100
+msgid "Sent as source, so you can see where the sign-up came from."
+msgstr "Enviado como source, para saberes de onde veio a inscrição."
+
+#: src/Admin/Builder.php:173
+msgid "Products to recommend (optional)"
+msgstr "Produtos a recomendar (opcional)"
+
+#: src/Admin/Builder.php:174
+msgid "Products this answer fits"
+msgstr "Produtos que combinam com esta resposta"
+
+#: src/Admin/Builder.php:177
+msgid "The result shows the products that fit the most of the visitor's answers. Leave empty to show the result's own products."
+msgstr "O resultado mostra os produtos que combinam com mais respostas do visitante. Deixa vazio para mostrar os produtos do próprio resultado."
+
+#: src/Admin/Builder.php:178
+msgid "Products shown on the result"
+msgstr "Produtos mostrados no resultado"
+
+#: src/Admin/Builder.php:139
+msgid "Correct answers produce a percentage. The score range selects the result."
+msgstr "As respostas certas produzem uma percentagem. O intervalo de pontuação seleciona o resultado."
+
+#: src/Admin/Builder.php:140
+msgid "Each selected answer adds points to outcomes. The outcome with the most points wins; ties use the first outcome below."
+msgstr "Cada resposta selecionada soma pontos aos resultados. Ganha o resultado com mais pontos; em caso de empate é usado o primeiro resultado abaixo."
+
+#: src/Admin/Builder.php:179
+msgid "How products are recommended"
+msgstr "Como são recomendados os produtos"
+
+#: src/Admin/Builder.php:180
+msgid "Use products from the winning result"
+msgstr "Usar os produtos do resultado vencedor"
+
+#: src/Admin/Builder.php:181
+msgid "Rank products matched to selected answers"
+msgstr "Ordenar os produtos associados às respostas selecionadas"
+
+#: src/Admin/Builder.php:182
+msgid "The quiz first chooses a result, then shows that result's products in the order configured."
+msgstr "O quiz escolhe primeiro um resultado e depois mostra os produtos desse resultado pela ordem configurada."
+
+#: src/Admin/Builder.php:183
+msgid "Every selected answer gives one match to its products. Products with the most matches appear first; ties follow question and product order. If no answer matches a product, the winning result's products are used."
+msgstr "Cada resposta selecionada dá uma correspondência aos seus produtos. Os produtos com mais correspondências aparecem primeiro; os empates seguem a ordem das perguntas e dos produtos. Se nenhuma resposta corresponder a um produto, são usados os produtos do resultado vencedor."
+
+#: src/Admin/Builder.php:184
+msgid "Create the messages visitors see for score ranges. Products here are the recommendation or fallback for that score."
+msgstr "Cria as mensagens que os visitantes veem para cada intervalo de pontuação. Os produtos aqui são a recomendação ou alternativa para essa pontuação."
+
+#: src/Admin/Builder.php:185
+msgid "Create outcomes first. Answers below will give points to these outcomes; the highest total wins."
+msgstr "Cria primeiro os resultados. As respostas abaixo darão pontos a estes resultados; ganha o total mais alto."
+
+#: src/Admin/Builder.php:186
+msgid "Mark the correct answer or answers. You can also map answers to products when answer matching is selected."
+msgstr "Marca a resposta ou respostas certas. Também podes associar respostas a produtos quando essa opção está selecionada."
+
+#: src/Admin/Builder.php:187
+msgid "For every answer, set how many points it gives each outcome. Higher numbers make that outcome more likely."
+msgstr "Em cada resposta, define quantos pontos dá a cada resultado. Números mais altos tornam esse resultado mais provável."
+
+#: src/Admin/Builder.php:192
+msgid "Fallback products (used when no answer matches)"
+msgstr "Produtos alternativos (usados quando nenhuma resposta corresponde)"
+
+#: src/Admin/Builder.php:193
+msgid "Recommendation map"
+msgstr "Mapa de recomendações"
+
+#: src/Admin/Builder.php:194
+msgid "This is the complete decision map. Edit the values in Questions or Results; this table updates immediately."
+msgstr "Este é o mapa completo da decisão. Edita os valores em Perguntas ou Resultados; esta tabela atualiza-se imediatamente."
+
+#: src/Admin/Builder.php:197
+msgid "Effect on result"
+msgstr "Efeito no resultado"
+
+#: src/Admin/Builder.php:199
+msgid "Correct answer"
+msgstr "Resposta certa"
+
+#: src/Admin/Builder.php:200
+msgid "Incorrect answer"
+msgstr "Resposta errada"
+
+#: src/Admin/Builder.php:201
+msgid "No outcome points"
+msgstr "Sem pontos para resultados"
+
+#: src/Admin/Builder.php:202
+msgid "No products"
+msgstr "Sem produtos"
+
+#: src/Admin/Builder.php:138
+msgid "Product Finder (recommended)"
+msgstr "Recomendador de produtos (recomendado)"
+
+#: src/Admin/Builder.php:141
+msgid "Selected answers boost or exclude products directly. The strongest matching products are recommended."
+msgstr "As respostas selecionadas reforçam ou excluem produtos diretamente. São recomendados os produtos com a correspondência mais forte."
+
+#: src/Admin/Builder.php:190
+msgid "For every answer, add product rules: recommend or exclude a product, category, tag, or attribute."
+msgstr "Em cada resposta, adiciona regras de produto: recomenda ou exclui um produto, categoria, etiqueta ou atributo."
+
+#: src/Admin/Builder.php:191
+msgid "Design the recommendation screen and choose fallback products for visitors whose answers produce no matches."
+msgstr "Cria o ecrã de recomendação e escolhe produtos alternativos para visitantes cujas respostas não tenham correspondências."
+
+#: src/Admin/Builder.php:196
+msgid "Answer"
+msgstr "Resposta"
+
+#: src/Admin/Builder.php:198
+msgid "Products"
+msgstr "Produtos"
+
+#: src/Admin/Builder.php:203
+msgid "Product rules"
+msgstr "Regras de produto"
+
+#: src/Admin/Builder.php:204
+msgid "Boost makes matching products more likely. Exclude removes them completely."
+msgstr "Reforçar aumenta a probabilidade dos produtos correspondentes. Excluir remove-os completamente."
+
+#: src/Admin/Builder.php:205
+msgid "Recommend / boost"
+msgstr "Recomendar / reforçar"
+
+#: src/Admin/Builder.php:206
+msgid "Exclude"
+msgstr "Excluir"
+
+#: src/Admin/Builder.php:207
+msgid "Strength"
+msgstr "Força"
+
+#: src/Admin/Builder.php:208
+msgid "Specific product"
+msgstr "Produto específico"
+
+#: src/Admin/Builder.php:209
+msgid "Category, tag, or attribute"
+msgstr "Categoria, etiqueta ou atributo"
+
+#: src/Admin/Builder.php:210
+msgid "Add catalog rule"
+msgstr "Adicionar regra de catálogo"
+
+#: src/Admin/Builder.php:211
+msgid "Choose a category, tag, or attribute"
+msgstr "Escolhe uma categoria, etiqueta ou atributo"
+
+#: src/Admin/Builder.php:212
+msgid "Ranks products directly"
+msgstr "Ordena os produtos diretamente"
+
+#: src/Admin/Builder.php:213
+msgid "Setup check"
+msgstr "Verificação da configuração"
+
+#: src/Admin/Builder.php:214
+msgid "The quiz has complete mappings and is ready to test."
+msgstr "O quiz tem todas as associações e está pronto para testar."
+
+#: src/Admin/Builder.php:215
+msgid "has no product rule"
+msgstr "não tem regra de produto"
+
+#: src/Admin/Builder.php:216
+msgid "No answer recommends a product. Add at least one boost rule or fallback product."
+msgstr "Nenhuma resposta recomenda um produto. Adiciona pelo menos uma regra de reforço ou um produto alternativo."
+
+#. translators: 1: product name or ID, 2: question text.
+#: src/Admin/Builder.php:219
+#, php-format
+msgid "%1$s can never be recommended because every answer to “%2$s” excludes it."
+msgstr "%1$s nunca pode ser recomendado porque todas as respostas a «%2$s» o excluem."
+
+#: src/Admin/Builder.php:220
+msgid "Test recommendation"
+msgstr "Testar recomendação"
+
+#: src/Admin/Builder.php:221
+msgid "Choose answers below and run a test. Nothing is saved and no attempt is recorded."
+msgstr "Escolhe as respostas abaixo e executa um teste. Nada é guardado e não é registada qualquer tentativa."
+
+#: src/Admin/Builder.php:222
+msgid "Run test"
+msgstr "Executar teste"
+
+#: src/Admin/Builder.php:223
+msgid "No products matched these answers. Add boost rules or fallback products."
+msgstr "Nenhum produto correspondeu a estas respostas. Adiciona regras de reforço ou produtos alternativos."
+
+#: src/Admin/Builder.php:224
+msgid "The preview could not be calculated."
+msgstr "Não foi possível calcular a pré-visualização."
+
+#. translators: %s: comma-separated selected answers.
+#: src/Admin/Builder.php:226
+#, php-format
+msgid "Because: %s"
+msgstr "Porque: %s"
+
+#: src/Admin/Builder.php:227
+msgid "1. Setup"
+msgstr "1. Configuração"
+
+#: src/Admin/Builder.php:228
+msgid "2. Result"
+msgstr "2. Resultado"
+
+#: src/Admin/Builder.php:229
+msgid "3. Questions"
+msgstr "3. Perguntas"
+
+#: src/Admin/Builder.php:230
+msgid "4. Review & test"
+msgstr "4. Rever e testar"
+
+#: src/Admin/Builder.php:231
+msgid "5. Publish"
+msgstr "5. Publicar"
+
+#: src/Admin/Builder.php:232
+msgid "Previous"
+msgstr "Anterior"
+
+#: src/Admin/Builder.php:233
+msgid "Next step"
+msgstr "Passo seguinte"
+
+#. translators: %s: comma-separated selected answers.
+#: src/Frontend/Shortcode.php:97
+#, php-format
+msgid "Recommended because: %s"
+msgstr "Recomendado porque: %s"
+
+#: src/Admin/Builder.php:217
+msgid "Product Finder uses the first result screen only. Remove the extra results or switch back to an Outcome quiz."
+msgstr "O Recomendador de produtos usa apenas o primeiro ecrã de resultado. Remove os resultados adicionais ou volta a escolher um quiz de Resultado."
+
+#: src/Quiz/Config.php:121
+msgid "Product Finder needs exactly one result screen."
+msgstr "O Localizador de Produtos precisa de exatamente um ecrã de resultado."
+
+#: src/Quiz/Config.php:124
+msgid "Add at least one boost rule or fallback product."
+msgstr "Adiciona pelo menos uma regra de reforço ou um produto alternativo."
+
+#: src/Quiz/Config.php:264
+msgid "Enter the answer text."
+msgstr "Introduz o texto da resposta."
+
+#: src/Rest/AttemptsController.php:201
+#: src/Rest/AttemptsController.php:212
+msgid "Please answer every question using one of the available choices."
+msgstr "Responde a todas as perguntas usando uma das opções disponíveis."
+
+#. translators: %s: the only result title.
+#: src/Admin/Builder.php:189
+#, php-format
+msgid "This quiz has one result (“%s”). Every answer leads to it automatically, so no point value is needed."
+msgstr "Este quiz tem um resultado (“%s”). Todas as respostas conduzem automaticamente a esse resultado, por isso não é necessário indicar pontos."
+
+#: src/Admin/Builder.php:235
+msgid "Search for the replacement product…"
+msgstr "Procura o produto de substituição…"
+
+#: src/Admin/Builder.php:236
+msgid "Search below to add a product. Use Edit beside a selected product to replace it."
+msgstr "Procura abaixo para adicionar um produto. Usa Editar junto a um produto selecionado para o substituir."
+
+#: src/Admin/Builder.php:237
+msgid "No products found."
+msgstr "Nenhum produto encontrado."
+
+#: src/Admin/Builder.php:238
+msgid "Product search failed. Please try again."
+msgstr "A pesquisa de produtos falhou. Tenta novamente."
+
+#: src/Admin/Builder.php:240
+msgid "Edit"
+msgstr "Editar"
+
+#. translators: %d: number of products mapped to an answer.
+#: src/Admin/Builder.php:176
+#, php-format
+msgid "Mapped: %d"
+msgstr "Associados: %d"

@@ -3,8 +3,15 @@ require_once __DIR__ . '/bootstrap.php';
 global $wpdb;
 bgq_assert( post_type_exists( 'bgq_quiz' ), 'post type registered' );
 $cols = (array) $wpdb->get_col( "SHOW COLUMNS FROM {$wpdb->prefix}bgq_attempts", 0 );
-foreach ( [ 'id', 'quiz_id', 'user_id', 'email', 'name', 'score', 'correct_count', 'total_count', 'result_id', 'answers', 'ip_hash', 'duration_seconds', 'gift_card_id', 'created_at' ] as $c ) {
+foreach ( [ 'id', 'quiz_id', 'user_id', 'email', 'name', 'score', 'correct_count', 'total_count', 'result_id', 'answers', 'recommendations', 'ip_hash', 'duration_seconds', 'gift_card_id', 'reward_key', 'created_at' ] as $c ) {
 	bgq_assert( in_array( $c, $cols, true ), "column $c exists" );
 }
 bgq_assert_eq( BGQ_DB_VERSION, get_option( 'bgq_db_version' ), 'db version stored' );
-bgq_assert_eq( '0', Bgq\Support\Options::get( 'cleanup_on_uninstall' ), 'options default' );
+bgq_assert_eq( '0', Bgq\Support\Options::defaults()['cleanup_on_uninstall'], 'options default' );
+
+$legacy_id = Bgq\Quiz\Attempts::insert( [ 'quiz_id' => 999999999, 'answers' => [] ] );
+$wpdb->update( $wpdb->prefix . 'bgq_attempts', [ 'recommendations' => null ], [ 'id' => $legacy_id ] );
+bgq_assert_eq( 1, Bgq\Support\Installer::backfill_recommendations(), 'legacy recommendation row backfilled' );
+$legacy = Bgq\Quiz\Attempts::get( $legacy_id );
+bgq_assert( isset( json_decode( $legacy->recommendations, true )['ids'] ), 'backfill stores a recommendation snapshot' );
+Bgq\Quiz\Attempts::delete( $legacy_id );

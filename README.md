@@ -2,7 +2,7 @@
 
 Build score and outcome quizzes, capture leads, recommend products and reward with gift cards. Lightweight, no framework.
 
-- Stable version: 1.0.2
+- Stable version: 1.2.2
 - Requires: WordPress 5.8+, PHP 7.4+ (tested up to WordPress 7.1)
 - Author: beltoft.net
 - Text domain: beltoft-quiz
@@ -11,10 +11,11 @@ Build score and outcome quizzes, capture leads, recommend products and reward wi
 
 - Score quizzes with right and wrong answers, a pass mark and results by score range.
 - Outcome quizzes where answers add points to results, e.g. "which perfume suits you".
+- A dedicated Product Finder with boost/exclude rules for products, categories, tags, and attributes.
 - Lead capture: name and email before the result, with a consent checkbox.
 - Entries in admin with search, filters and CSV export.
 - Analytics: attempts, average score, pass rate, outcome distribution, per-question correct rate.
-- WooCommerce: a result can be a product, shown with price and an Add to cart button.
+- WooCommerce product recommendations from either the winning result or products matched to selected answers.
 - Gift card reward with Beltoft Gift Cards installed.
 - Timer, question and answer shuffle, one attempt per visitor.
 - Vanilla JavaScript, no framework, keyboard accessible.
@@ -33,6 +34,38 @@ Build a quiz under **Quizzes > Add New** and place `[beltoft_quiz id="123"]` any
 Entries are included in WordPress's personal data export and erasure tools, and a suggested privacy policy text is registered.
 
 ## Changelog
+
+### 1.2.2
+
+- Improved answer-product editing with explicit Edit, Replace, and Remove controls.
+- Clarified one-result outcome quizzes by hiding meaningless point fields.
+- Added visible empty and error states to product search.
+
+### 1.2.1
+
+- Fixed server-side answer validation for missing, unknown, and multiple single-choice answers.
+- Made gift-card reward claims concurrency-safe.
+- Removed the 200-product category-rule limit and excluded hidden or out-of-stock products.
+- Enforced Product Finder completeness during server validation.
+- Preserved recommendation IDs and reasons with each attempt.
+- Hardened newsletter webhooks, and cached repeated product-name lookups in the builder.
+
+### 1.2.0
+
+- Added a guided five-step quiz builder.
+- Added a dedicated Product Finder quiz type with weighted recommend/boost and absolute exclude rules.
+- Added category, tag, and global product-attribute targeting alongside individual products.
+- Added setup warnings for unmapped answers, missing candidates, and directly unreachable products.
+- Added a no-save recommendation simulator with ranked products and recommendation reasons.
+- Added optional “recommended because” explanations to frontend product cards.
+
+### 1.1.0
+
+- Added an explicit product recommendation method: use the winning result's products or rank products matched to selected answers.
+- Added a live recommendation map showing every answer's effect on results and products.
+- Changed the builder order so results/outcomes are defined before answers point to them.
+- Clarified outcome scoring, tie-breaking, product ranking, and fallback behavior in the builder.
+- Preserved older quizzes by inferring their existing recommendation method without rewriting stored data.
 
 ### 1.0.2
 

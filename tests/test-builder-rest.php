@@ -43,6 +43,28 @@ bgq_assert_eq( 'score', Config::load( $id )['mode'], 'invalid save does not over
 list( $status ) = bgq_t_cfg( 999999999, 'POST', $valid );
 bgq_assert_eq( 404, $status, 'unknown quiz 404' );
 
+$preview = [
+	'mode'      => 'product',
+	'questions' => [ [ 'id' => 'qp', 'text' => 'Pick', 'type' => 'single', 'answers' => [ [ 'id' => 'ap', 'text' => 'Match', 'effects' => [ [ 'target' => 'product', 'product_id' => 123, 'action' => 'boost', 'weight' => 2 ] ] ], [ 'id' => 'bp', 'text' => 'Other' ] ] ] ],
+	'results'   => [ [ 'id' => 'rp', 'title' => 'Preview result' ] ],
+	'preview_answers' => [ 'qp' => [ 'ap' ] ],
+];
+list( $status, $data ) = bgq_t_cfg( $id, 'POST', $preview );
+bgq_assert_eq( 200, $status, 'admin product preview responds' );
+bgq_assert_eq( [ 123 ], $data['grade']['product_ids'], 'preview returns ranked product ids' );
+bgq_assert_eq( 'Preview result', $data['result_title'], 'preview returns the result title' );
+bgq_assert_eq( 'score', Config::load( $id )['mode'], 'preview does not persist config' );
+
+$catalog_name = 'Finder Target ' . wp_rand();
+$catalog_term = wp_insert_term( $catalog_name, 'product_cat' );
+bgq_test_register_cleanup( function () use ( $catalog_term ) { if ( ! is_wp_error( $catalog_term ) ) { wp_delete_term( $catalog_term['term_id'], 'product_cat' ); } } );
+$catalog_req = new WP_REST_Request( 'GET', '/bgq/v1/quizzes/' . $id . '/catalog-targets' );
+$catalog_req->set_param( 'search', 'Finder Target' );
+$catalog_res = rest_do_request( $catalog_req );
+$catalog_data = $catalog_res->get_data();
+bgq_assert_eq( 200, $catalog_res->get_status(), 'admin catalog target search responds' );
+bgq_assert( count( array_filter( $catalog_data, function ( $item ) use ( $catalog_term ) { return (int) $item['term_id'] === (int) $catalog_term['term_id']; } ) ) === 1, 'catalog search finds a product category' );
+
 // Builder page is enqueued for the quiz edit screen and the Quizzes list gets a shortcode column.
 bgq_assert( has_filter( 'replace_editor', [ 'Bgq\\Admin\\Builder', 'replace_editor' ] ) !== false, 'builder replaces the editor' );
 $cols = apply_filters( 'manage_bgq_quiz_posts_columns', [ 'title' => 'Title', 'date' => 'Date' ] );

@@ -61,6 +61,23 @@ bgq_assert_eq( 1, bgq_t_rows( $quiz ), 'row inserted' );
 $row = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$table} WHERE quiz_id = %d", $quiz ) );
 bgq_assert_eq( Attempts::ip_hash( $ip ), $row->ip_hash, 'ip hashed' );
 bgq_assert_eq( '{"q1":["a"]}', $row->answers, 'answers stored' );
+bgq_assert( isset( json_decode( $row->recommendations, true )['ids'] ), 'recommendation snapshot stored with the attempt' );
+
+// A crafted request cannot omit a question or select multiple radio answers.
+list( $status, $data ) = bgq_t_submit( $quiz, [ 'token' => Token::issue( $quiz ), 'answers' => [] ] );
+bgq_assert_eq( 400, $status, 'missing answers rejected' );
+bgq_assert_eq( 'bgq_invalid_answers', $data['code'], 'missing answers use the validation error code' );
+list( $status ) = bgq_t_submit( $quiz, [ 'token' => Token::issue( $quiz ), 'answers' => [ 'q1' => [ 'a', 'b' ] ] ] );
+bgq_assert_eq( 400, $status, 'multiple answers for a single-choice question rejected' );
+list( $status ) = bgq_t_submit( $quiz, [ 'token' => Token::issue( $quiz ), 'answers' => [ 'q1' => [ 'not-an-answer' ] ] ] );
+bgq_assert_eq( 400, $status, 'unknown answer id rejected' );
+bgq_assert_eq( 1, bgq_t_rows( $quiz ), 'invalid answer payloads insert nothing' );
+
+// A timer that genuinely elapsed may store the questions reached so far.
+$timed_token = Token::issue( $quiz, time() - 61 );
+list( $status ) = bgq_t_submit( $quiz, [ 'token' => $timed_token, 'answers' => [] ] );
+bgq_assert_eq( 200, $status, 'elapsed timed quiz may submit incomplete answers' );
+bgq_assert_eq( 2, bgq_t_rows( $quiz ), 'timed-out partial attempt is stored once' );
 
 // Errors.
 list( $status, $data ) = bgq_t_submit( $quiz, [ 'token' => $bad, 'answers' => [] ] );
@@ -70,7 +87,7 @@ list( $status, $data ) = bgq_t_submit( $quiz, [ 'token' => $older, 'answers' => 
 bgq_assert_eq( 410, $status, 'expired 410' );
 list( $status, $data ) = bgq_t_submit( 999999999, [ 'token' => $t, 'answers' => [] ] );
 bgq_assert_eq( 404, $status, 'unknown quiz 404' );
-bgq_assert_eq( 1, bgq_t_rows( $quiz ), 'errors insert nothing (still 1 row)' );
+bgq_assert_eq( 2, bgq_t_rows( $quiz ), 'errors insert nothing' );
 
 // Duplicate submit: same token twice → one row, second flagged already.
 $dup = Token::issue( $quiz );
@@ -78,7 +95,7 @@ bgq_t_submit( $quiz, [ 'token' => $dup, 'answers' => [ 'q1' => [ 'b' ] ] ] );
 list( $status, $data ) = bgq_t_submit( $quiz, [ 'token' => $dup, 'answers' => [ 'q1' => [ 'b' ] ] ] );
 bgq_assert_eq( 200, $status, 'duplicate submit ok' );
 bgq_assert_eq( true, $data['already'], 'duplicate submit flagged' );
-bgq_assert_eq( 2, bgq_t_rows( $quiz ), 'duplicate submit: one row for the pair' );
+bgq_assert_eq( 3, bgq_t_rows( $quiz ), 'duplicate submit: one row for the pair' );
 
 // Email required + consent.
 $quiz2 = bgq_t_quiz( [ 'require_email' => true, 'consent_text' => 'I agree' ] );
@@ -118,3 +135,35 @@ $first = Attempts::get( (int) $page[0]->id );
 bgq_assert_eq( $quiz4, (int) $first->quiz_id, 'get' );
 Attempts::delete( (int) $first->id );
 bgq_assert_eq( 9, Attempts::count( [ 'quiz_id' => $quiz4 ] ), 'delete' );
+
+// Stored recommendation snapshots survive later edits to the quiz rules.
+$snapshot_one = new WC_Product_Simple();
+$snapshot_one->set_name( 'Snapshot one' );
+$snapshot_one->set_status( 'publish' );
+$snapshot_one->set_regular_price( '10' );
+$snapshot_one_id = $snapshot_one->save();
+$snapshot_two = new WC_Product_Simple();
+$snapshot_two->set_name( 'Snapshot two' );
+$snapshot_two->set_status( 'publish' );
+$snapshot_two->set_regular_price( '12' );
+$snapshot_two_id = $snapshot_two->save();
+bgq_test_register_cleanup( function () use ( $snapshot_one_id, $snapshot_two_id ) { wp_delete_post( $snapshot_one_id, true ); wp_delete_post( $snapshot_two_id, true ); } );
+$snapshot_config = Config::validate( [
+	'mode'      => 'product',
+	'questions' => [ [ 'id' => 'pick', 'text' => 'Pick', 'type' => 'single', 'answers' => [
+		[ 'id' => 'one', 'text' => 'One', 'effects' => [ [ 'target' => 'product', 'product_id' => $snapshot_two_id, 'action' => 'boost' ] ] ],
+		[ 'id' => 'two', 'text' => 'Two' ],
+	] ] ],
+	'results'   => [ [ 'id' => 'result', 'title' => 'Products' ] ],
+] );
+$snapshot_attempt = (object) [
+	'result_id'       => 'result',
+	'score'           => 0,
+	'correct_count'   => 0,
+	'total_count'     => 1,
+	'answers'         => wp_json_encode( [ 'pick' => [ 'one' ] ] ),
+	'recommendations' => wp_json_encode( [ 'ids' => [ $snapshot_one_id ], 'reasons' => [ $snapshot_one_id => [ 'Original choice' ] ] ] ),
+];
+$snapshot_response = \Bgq\Rest\AttemptsController::response( $snapshot_config, $snapshot_attempt, true );
+bgq_assert_eq( $snapshot_one_id, $snapshot_response['result']['products'][0]['id'], 'response uses the stored recommendation instead of current rules' );
+bgq_assert_eq( 'Original choice', $snapshot_response['result']['products'][0]['reason'], 'stored recommendation reason is preserved' );

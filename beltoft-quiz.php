@@ -3,7 +3,7 @@
  * Plugin Name:       Beltoft Quiz
  * Plugin URI:        https://wordpress.org/plugins/beltoft-quiz/
  * Description:       Build score and outcome quizzes, capture leads, recommend products and reward with gift cards. Lightweight, no framework.
- * Version:           1.0.2
+ * Version:           1.2.2
  * Requires at least: 5.8
  * Requires PHP:      7.4
  * Author:            beltoft.net
@@ -32,11 +32,11 @@ spl_autoload_register(
 	}
 );
 
-define( 'BGQ_VERSION', '1.0.2' );
+define( 'BGQ_VERSION', '1.2.2' );
 define( 'BGQ_PATH', plugin_dir_path( __FILE__ ) );
 define( 'BGQ_URL', plugin_dir_url( __FILE__ ) );
 define( 'BGQ_BASENAME', plugin_basename( __FILE__ ) );
-define( 'BGQ_DB_VERSION', '1.0' );
+define( 'BGQ_DB_VERSION', '1.1' );
 
 register_activation_hook( __FILE__, [ 'Bgq\\Support\\Installer', 'activate' ] );
 

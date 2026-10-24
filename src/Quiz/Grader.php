@@ -19,11 +19,96 @@ class Grader {
 	public static function grade( array $config, array $answers ): array {
 		$answers = is_array( $answers ) ? $answers : [];
 
-		if ( 'outcome' === $config['mode'] ) {
-			return self::grade_outcome( $config, $answers );
+		if ( 'product' === $config['mode'] ) {
+			$grade = self::grade_product( $config, $answers );
+		} else {
+			$grade = 'outcome' === $config['mode'] ? self::grade_outcome( $config, $answers ) : self::grade_score( $config, $answers );
 		}
+		$details = self::recommendation_details( $config, $answers, (string) $grade['result_id'] );
+		$grade['product_ids']     = $details['ids'];
+		$grade['product_reasons'] = $details['reasons'];
+		return $grade;
+	}
 
-		return self::grade_score( $config, $answers );
+	/**
+	 * Full recommendation details for admin previews and result explanations.
+	 */
+	public static function recommendation_details( array $config, array $answers, string $result_id ): array {
+		$method = (string) ( $config['settings']['product_recommendation'] ?? 'result_products' );
+		if ( 'product_rules' === $method || 'product' === ( $config['mode'] ?? '' ) ) {
+			return ProductMatcher::match( $config, $answers, $result_id );
+		}
+		return [ 'ids' => self::recommend( $config, $answers, $result_id ), 'scores' => [], 'reasons' => [], 'excluded' => [] ];
+	}
+
+	/**
+	 * Products to recommend. In result mode, use the winning result's products in
+	 * their configured order. In answer-match mode, each selected answer adds one
+	 * match to its products; most matches wins and ties keep question/product
+	 * order. The winning result's products are the fallback when no answer maps to
+	 * a product. At most settings.max_products are returned.
+	 *
+	 * @return int[]
+	 */
+	public static function recommend( array $config, array $answers, string $result_id ): array {
+		$method = (string) ( $config['settings']['product_recommendation'] ?? 'result_products' );
+		if ( 'product_rules' === $method || 'product' === ( $config['mode'] ?? '' ) ) {
+			return ProductMatcher::match( $config, $answers, $result_id )['ids'];
+		}
+		$own = [];
+		foreach ( $config['results'] as $r ) {
+			if ( $r['id'] === $result_id ) {
+				$own = array_map( 'intval', (array) ( $r['product_ids'] ?? ( ! empty( $r['product_id'] ) ? [ $r['product_id'] ] : [] ) ) );
+			}
+		}
+		$counts = [];
+		$order  = [];
+		foreach ( $config['questions'] as $q ) {
+			$chosen = self::selected( $answers, $q['id'], array_column( $q['answers'], 'id' ) );
+			foreach ( $q['answers'] as $a ) {
+				if ( ! in_array( $a['id'], $chosen, true ) ) {
+					continue;
+				}
+				foreach ( (array) ( $a['products'] ?? [] ) as $pid ) {
+					$pid = (int) $pid;
+					if ( $pid <= 0 ) {
+						continue;
+					}
+					if ( ! isset( $counts[ $pid ] ) ) {
+						$counts[ $pid ] = 0;
+						$order[ $pid ]  = count( $order );
+					}
+					$counts[ $pid ]++;
+				}
+			}
+		}
+		$max = max( 1, (int) ( $config['settings']['max_products'] ?? 3 ) );
+		if ( 'answer_matches' !== $method ) {
+			return array_slice( $own, 0, $max );
+		}
+		if ( ! $counts ) {
+			return array_slice( $own, 0, $max );
+		}
+		$pool = array_keys( $counts );
+		usort( $pool, static function ( $a, $b ) use ( $counts, $order ) {
+			return [ -$counts[ $a ], $order[ $a ] ] <=> [ -$counts[ $b ], $order[ $b ] ];
+		} );
+		return array_slice( $pool, 0, $max );
+	}
+
+	/**
+	 * Product Finder mode has one presentation result; answers only rank products.
+	 */
+	private static function grade_product( array $config, array $answers ): array {
+		$first = reset( $config['results'] );
+		return [
+			'score'         => 0.0,
+			'correct_count' => 0,
+			'total_count'   => count( $config['questions'] ),
+			'result_id'     => $first ? (string) $first['id'] : '',
+			'passed'        => null,
+			'per_question'  => array_fill_keys( array_column( $config['questions'], 'id' ), true ),
+		];
 	}
 
 	/**
